@@ -1,0 +1,68 @@
+# Ignore virtual environment directories and configuration
+venv/
+pyvenv.cfg
+data/pyvista_env/
+
+# Ignore Python cache directories and compiled files
+__pycache__/
+*.py[cod]
+*.pyo
+*.so
+
+# Ignore macOS metadata files
+.DS_Store
+
+# Ignore output and temporary files
+output/
+outputs/
+plots/
+
+# Ignore private data
+private/
+
+# Ignore shape models and large data files
+data/shape_models/
+data/model_setups/
+
+# Ignore flyby moon scripts
+scripts/flyby_sim/
+
+# Ignore profile outputs and debugging files
+*.dot
+*.prof
+*.svg
+*.gif
+
+# Ignore archive and backup files
+*.bak
+*.swp
+*.swo
+*.tmp
+
+# Ignore temporary files and artifacts from editors and IDEs
+.vscode/
+.idea/
+*.iml
+*.sublime-project
+*.sublime-workspace
+
+# Ignore environment and dependency files that are system-specific
+*.env
+*.virtualenv
+*.tox/
+node_modules/
+build/
+dist/
+
+# Ignore any large datasets or generated CSVs that might clutter the repo
+*.csv
+*.npz
+
+# Local generated files
+.requirements_hash
+.venv_initialized
+.direnv/
+
+# Ignore auto-generated config files
+data/config/*_TI_*.yaml
+data/config/optimiser_runs/
