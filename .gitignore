@@ -21,7 +21,6 @@ plots/
 private/
 
 # Ignore shape models and large data files
-data/shape_models/
 data/model_setups/
 
 # Ignore flyby moon scripts
