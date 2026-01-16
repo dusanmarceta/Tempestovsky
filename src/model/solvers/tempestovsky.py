@@ -70,12 +70,56 @@ def calculate_temperatures(temperatures, layer_temperatures, insolation, visible
                     
     return temperatures
 
-#    print('****************************************')
-#    print('****************************************')
-#    print('shape', np.shape(layer_temperatures))
-#    print('****************************************')
-#    print('****************************************')
+
     
+'''
+ADDED 
+
+'''
+
+def calculate_yarkovsky(simulation, shape_model, temperatures):
+    
+
+
+    positions = np.array([facet.position for facet in shape_model], dtype=np.float64)
+    areas = np.array([facet.area for facet in shape_model], dtype=np.float64)
+    normals = np.array([facet.normal for facet in shape_model], dtype=np.float64)
+    
+    print('POSITIONS')
+    print(len(positions))
+    print(len(areas))
+    print(len(normals))
+    print('POSITIONS')
+    
+    
+    F=2/3*simulation.emissivity*const.sigma_sb.value / const.c.value * np.sum(temperatures[:, None]**4 * normals * areas[:, None], axis=0)
+    
+    r_trans = np.array([0, 1, 0])
+    r_rad = np.array([1, 0, 0])
+    B = np.dot(F, r_trans)
+        
+            # Radial thermal force
+    R = np.dot(F, r_rad)
+    
+    
+    mean_motion = np.sqrt(const.GM_sun.value/(simulation.a_au * const.au.value)**3)
+    
+    true_anomaly = 0
+    sun_distance = 1
+    mass  = 1e6
+    
+    
+    
+    dadt = 2 * mean_motion * (simulation.a_au * const.au.value)**2 / const.GM_sun.value * (
+                    R * simulation.a_au * const.au.value * simulation.ecc * np.sin(true_anomaly) / np.sqrt(1-simulation.ecc**2) + 
+                    B * simulation.a_au**2 * const.au.value * np.sqrt(1-simulation.ecc**2) / sun_distance)/mass
+            
+            
+    
+    return dadt
+
+
+
 
 
 
@@ -265,12 +309,15 @@ class YarkovskySolver(TemperatureSolver):
         
         trajanje = time.time() - pocetak
         
+        yarko = calculate_yarkovsky(simulation, shape_model, updated_temperatures)
+        
         print('//////////////////////////////////////////////////////////////') 
         print('//////////////////////////////////////////////////////////////')  
         print('//////////////////////////////////////////////////////////////') 
         
         print(updated_temperatures)
         print('trajanje =', trajanje)
+        print('YARKO', yarko)
         
         print('                     GOTOVO!!!                   ')  
         
@@ -289,49 +336,7 @@ class YarkovskySolver(TemperatureSolver):
         } 
             
         
-    # def advance_one_step(thermal_data, insolation_step, visible_facets_list, view_factors_list,
-    #                  const1, const2, const3, self_heating_const, n_layers, include_self_heating):
-    #     """
-    #     Ažurira temperaturu asteroida za jedan korak insolation_step (dimenzija n_facets x 1)
-    #     koristeći calculate_temperatures_one_step.
-    #     """
     
-    #     # Uzmi površinsku temperaturu iz prethodnog trenutka
-    #     current_temperatures = thermal_data.temperatures[:, 0].copy()
-    
-    #     # insolation_step: oblika (n_facets, 1) -> pretvori u (n_facets,)
-    #     insolation_step = insolation_step[:, 0]
-    
-    #     # Pozovi funkciju za jedan korak
-    #     updated_temperatures = calculate_temperatures_one_step(
-    #         current_temperatures,
-    #         thermal_data.layer_temperatures,
-    #         insolation_step,
-    #         visible_facets_list,
-    #         view_factors_list,
-    #         const1,
-    #         const2,
-    #         const3,
-    #         self_heating_const,
-    #         n_layers,
-    #         include_self_heating
-    #     )
-        
-    #     print('//////////////////////////////////////////////////////////////') 
-    #     print('//////////////////////////////////////////////////////////////')  
-    #     print('//////////////////////////////////////////////////////////////') 
-        
-    #     print('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA')  
-
-
-    #     print('//////////////////////////////////////////////////////////////')  
-    #     print('//////////////////////////////////////////////////////////////')  
-    #     print('//////////////////////////////////////////////////////////////') 
-    
-    
-
-
-        # subsurface (n_facets, n_layers)
 
 #        # Total thermal force
 #        F=2/3*simulation.emissivity*const.sigma_sb.value / const.c.value * np.sum((T[surface_cells][:, None])**4 * surface_normals * surface_areas[:, None], axis=0)
