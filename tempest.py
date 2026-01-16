@@ -35,6 +35,8 @@ from scipy.interpolate import interp1d
 import h5py
 from joblib import Parallel, delayed
 
+import astropy.constants as const
+
 # Ensure src directory is in the Python path
 current_dir = Path(__file__).resolve().parent
 src_dir = current_dir.parent / "src"
@@ -62,6 +64,17 @@ from src.utilities.utils import (
     rays_triangles_intersection
 )
 from src.utilities.plotting.plotting import check_remote_and_animate
+
+def geometry_for_yarko(shape_model):
+    positions = np.array([facet.position for facet in shape_model])
+    normals   = np.array([facet.normal   for facet in shape_model])
+    areas     = np.array([facet.area     for facet in shape_model])
+
+    volume = (1.0 / 3.0) * np.sum(
+        areas * np.einsum('ij,ij->i', positions, normals)
+    )
+
+    return abs(volume), normals, areas
 
 def read_shape_model(filename, timesteps_per_day, n_layers, max_days, calculate_energy_terms):
     ''' 
@@ -100,7 +113,10 @@ def read_shape_model(filename, timesteps_per_day, n_layers, max_days, calculate_
             facet = Facet(normal, vertices, timesteps_per_day, max_days, n_layers, calculate_energy_terms)
             shape_model.append(facet)
 
-    return shape_model
+    # >>> OVO JE NOVO <<<
+    volume, normals, areas = geometry_for_yarko(shape_model)
+
+    return shape_model, volume, normals, areas
 
 def save_shape_model(shape_model, filename, config):
     """
@@ -179,13 +195,18 @@ def main():
 
     # Setup simulation
     try:
-        shape_model = read_shape_model(
+        shape_model, volume, normals, areas = read_shape_model(
             config.path_to_shape_model_file,
             simulation.timesteps_per_day,
             simulation.n_layers,
             simulation.max_days,
             config.calculate_energy_terms
         )
+        
+        asteroid_mass = volume * simulation.density
+        print(f'mass = {asteroid_mass}')
+        print(f'density = {simulation.density}')
+
     except Exception as e:
         print(f"Failed to load shape model: {e}")
         sys.exit(1)
@@ -648,10 +669,11 @@ def main():
 
     conditional_print(config.silent_mode,  f"Running main simulation loop.\n")
     conditional_print(config.silent_mode,  f"Convergence target: {simulation.convergence_target} K with {config.convergence_method} convergence method.\n")
-
+    
+    mean_motion = np.sqrt(const.GM_sun.value/(simulation.a_au * const.au.value)**3)
     # Run solver
     solver_start_time = time.time()
-    result = solver.solve(thermal_data, shape_model, simulation, config)
+    result = solver.solve(thermal_data, shape_model, asteroid_mass, normals, areas, simulation, mean_motion, config)
     solver_end_time = time.time()
     solver_execution_time = solver_end_time - solver_start_time
     full_run_end_time = time.time()

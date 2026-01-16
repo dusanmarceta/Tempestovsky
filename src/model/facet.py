@@ -16,6 +16,10 @@ class Facet:
         self.area = self.calculate_area(vertices)
         self.position = np.mean(vertices, axis=0)
         self.visible_facets = []
+        # self.volume = self.calculate_volume(self.position, self.normal, self.area)
+        
+        
+        
         
         # New attributes for parent facet functionality
         self.sub_facets = []  # List of SubFacet objects
@@ -32,11 +36,32 @@ class Facet:
     def set_dynamic_arrays(self, length):
         self.secondary_radiation_view_factors = np.zeros(length)    
 
+    # @staticmethod
+    # def calculate_volume(position, normal, area):
+        
+    #     print(np.shape(position))
+        
+    #     print(position)
+        
+    #     # Implement volume calculation
+    #     positions = np.asarray(position)
+    #     normals = np.asarray(normal)
+    #     areas = np.asarray(area)
+        
+
+    
+    #     V =  abs((1.0 / 3.0) * np.sum(areas * np.sum(positions * normals, axis=1)))
+        
+    #     print(V)
+        
+    #     return V
+    
     @staticmethod
     def calculate_area(vertices):
         # Implement area calculation based on vertices
         v0, v1, v2 = vertices
         return np.linalg.norm(np.cross(v1-v0, v2-v0)) / 2
+    
 
     def generate_spherical_depression(self, config, simulation):
         if not config.apply_kernel_based_roughness:

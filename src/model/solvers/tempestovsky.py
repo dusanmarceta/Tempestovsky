@@ -77,50 +77,37 @@ ADDED
 
 '''
 
-def calculate_yarkovsky(simulation, shape_model, temperatures):
-    
-
-
-    positions = np.array([facet.position for facet in shape_model], dtype=np.float64)
-    areas = np.array([facet.area for facet in shape_model], dtype=np.float64)
-    normals = np.array([facet.normal for facet in shape_model], dtype=np.float64)
-    
-    print('POSITIONS')
-    print(len(positions))
-    print(len(areas))
-    print(len(normals))
-    print('POSITIONS')
-    
+def calculate_yarkovsky(simulation, mean_motion, asteroid_mass, normals, areas, temperatures):
     
     F=2/3*simulation.emissivity*const.sigma_sb.value / const.c.value * np.sum(temperatures[:, None]**4 * normals * areas[:, None], axis=0)
-    
-    r_trans = np.array([0, 1, 0])
-    r_rad = np.array([1, 0, 0])
-    B = np.dot(F, r_trans)
-        
-            # Radial thermal force
-    R = np.dot(F, r_rad)
-    
-    
-    mean_motion = np.sqrt(const.GM_sun.value/(simulation.a_au * const.au.value)**3)
+ 
+    '''
+    OVO SREDITI!
+    '''
     
     true_anomaly = 0
     sun_distance = 1
-    mass  = 1e6
+    
+    r_trans = np.array([0, 1, 0])
+    r_rad = np.array([1, 0, 0])
+    
+    '''
+    dalje je sve OK
+    '''
     
     
+    B = np.dot(F, r_trans)
+        
+    # Radial thermal force
+    R = np.dot(F, r_rad)
+
     
     dadt = 2 * mean_motion * (simulation.a_au * const.au.value)**2 / const.GM_sun.value * (
                     R * simulation.a_au * const.au.value * simulation.ecc * np.sin(true_anomaly) / np.sqrt(1-simulation.ecc**2) + 
-                    B * simulation.a_au**2 * const.au.value * np.sqrt(1-simulation.ecc**2) / sun_distance)/mass
+                    B * simulation.a_au**2 * const.au.value * np.sqrt(1-simulation.ecc**2) / sun_distance)/asteroid_mass
             
-            
-    
+  
     return dadt
-
-
-
-
 
 
 @jit(nopython=True)
@@ -199,7 +186,7 @@ class YarkovskySolver(TemperatureSolver):
             "beaming_factor"
         ]
 
-    def solve(self, thermal_data, shape_model, simulation, config):
+    def solve(self, thermal_data, shape_model, asteroid_mass, normals, areas, simulation, mean_motion, config):
         ''' 
         This is the main calculation function for the thermophysical body model. It calls the necessary functions to read in the shape model, set material and model properties, calculate 
         insolation and temperature arrays, and iterate until the model converges.
@@ -309,7 +296,7 @@ class YarkovskySolver(TemperatureSolver):
         
         trajanje = time.time() - pocetak
         
-        yarko = calculate_yarkovsky(simulation, shape_model, updated_temperatures)
+        yarko = calculate_yarkovsky(simulation, mean_motion, asteroid_mass, normals, areas, updated_temperatures)
         
         print('//////////////////////////////////////////////////////////////') 
         print('//////////////////////////////////////////////////////////////')  

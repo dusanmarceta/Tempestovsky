@@ -8,11 +8,11 @@ silent_mode: false                  # Set to true when running batch jobs (suppr
 remote: false                       # Set to true when running on a remote server (suppresses plotting)
 
 # File paths
-shape_model_file: "dinkinesh.stl"  # Name of the shape model file in data/shape_models/
+shape_model_file: "5km_ico_sphere_1280_facets.stl"  # Name of the shape model file in data/shape_models/
 shape_model_directory: "data/shape_models/"    
 
 # Physical parameters
-thermal_inertia:        50    # W m⁻² K⁻¹ s⁻½ - This is the main parameter that controls the thermal evolution of the body
+thermal_inertia:        200    # W m⁻² K⁻¹ s⁻½ - This is the main parameter that controls the thermal evolution of the body
 emissivity:             0.5         
 albedo:                 0.5              
 beaming_factor:         1.0
