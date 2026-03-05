@@ -203,9 +203,14 @@ def main():
             config.calculate_energy_terms
         )
         
+        
+        
+        
         asteroid_mass = volume * simulation.density
-        print(f'mass = {asteroid_mass}')
-        print(f'density = {simulation.density}')
+
+
+
+
 
     except Exception as e:
         print(f"Failed to load shape model: {e}")
@@ -398,6 +403,7 @@ def main():
                 numba_view_factors.append(arr.flatten() if arr.ndim > 1 else arr)
         thermal_data.thermal_view_factors = numba_view_factors
 
+    
     thermal_data = calculate_insolation(thermal_data, shape_model, simulation, config)
 
     # If kernel-based roughness is enabled, process per-timestep sub-facet insolation in vectorized fashion
@@ -670,10 +676,17 @@ def main():
     conditional_print(config.silent_mode,  f"Running main simulation loop.\n")
     conditional_print(config.silent_mode,  f"Convergence target: {simulation.convergence_target} K with {config.convergence_method} convergence method.\n")
     
+    
+    
+    
     mean_motion = np.sqrt(const.GM_sun.value/(simulation.a_au * const.au.value)**3)
+    
     # Run solver
     solver_start_time = time.time()
     result = solver.solve(thermal_data, shape_model, asteroid_mass, normals, areas, simulation, mean_motion, config)
+    
+    
+    print('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA')
     solver_end_time = time.time()
     solver_execution_time = solver_end_time - solver_start_time
     full_run_end_time = time.time()

@@ -311,11 +311,9 @@ def ecc2true(E, e):
         return np.arctan2(np.sqrt(1 - e ** 2) * np.sin(E), np.cos(E) - e)
 
 
-
-
 def sun_direction(time_from_aphelion, simulation):
-     mean_motion = np.sqrt(const.GM_sun.value /(simulation.a_au * const.au.value)**3)
-     mean_anomaly = np.pi + mean_motion * time_from_aphelion
+
+     mean_anomaly = np.pi + simulation.mean_motion * time_from_aphelion
      
      ecc_anomaly = kepler(simulation.ecc, mean_anomaly)
      
@@ -325,8 +323,8 @@ def sun_direction(time_from_aphelion, simulation):
      
      direction = np.array([-r * np.cos(true_anomaly), -r * np.sin(true_anomaly), 0])
      
-     print(time_from_aphelion, direction)
+#     print(time_from_aphelion, direction)
      
-     return (direction/np.linalg.norm(direction), r)
+     return (direction/np.linalg.norm(direction), r * const.au.value)
      
      
