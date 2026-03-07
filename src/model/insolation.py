@@ -124,10 +124,11 @@ def calculate_insolation_whole_orbit(thermal_data, shape_model, simulation, conf
 
     r_sunca = np.zeros(simulation.timesteps_per_orbit)
     ugao_sunca = np.zeros(simulation.timesteps_per_orbit)
+    current_sun_distance = np.zeros(simulation.timesteps_per_orbit)
     for t in range(simulation.timesteps_per_orbit):
         total_time = t * simulation.delta_t
            
-        current_sunlight_direction, current_sun_distance = sun_direction(total_time, simulation)
+        current_sunlight_direction, current_sun_distance[t] = sun_direction(total_time, simulation)
         rotation_matrix = calculate_rotation_matrix(simulation.rotation_axis, 
                                                  (2 * np.pi / simulation.timesteps_per_day) * t)
  
@@ -135,7 +136,7 @@ def calculate_insolation_whole_orbit(thermal_data, shape_model, simulation, conf
         rotated_sunlight_directions[t] = np.dot(rotation_matrix.T, current_sunlight_direction)
         rotated_sunlight_directions[t] /= np.linalg.norm(rotated_sunlight_directions[t])
         
-        r_sunca[t] = current_sun_distance / const.au.value
+        r_sunca[t] = current_sun_distance[t] / const.au.value
         ugao_sunca[t] = np.rad2deg(np.arctan2(rotated_sunlight_directions[t][1], rotated_sunlight_directions[t][0]))
 
     # Create chunks for parallel processing
@@ -198,16 +199,16 @@ def calculate_insolation_whole_orbit(thermal_data, shape_model, simulation, conf
 
     results = parallel(
         delayed(process_insolation_chunk_orbit)(
-            print(f"Processing chunk {chunk_idx+1} of {n_chunks} (indices {start_idx}:{end_idx})", flush=True) or normals[start_idx:end_idx].astype(np.float64),
+            print(f"Processing chunk {chunk_idx+1} of {n_chunks} (indices {start_idx}:{end_idx}", flush=True) or normals[start_idx:end_idx].astype(np.float64),
             positions[start_idx:end_idx].astype(np.float64),
             np.array(visible_facets_arrays[start_idx:end_idx], dtype=object),
             rotation_matrices.astype(np.float64),
             rotated_sunlight_directions.astype(np.float64),
-            float(simulation.solar_luminosity),
-            float(simulation.albedo),
-            float(current_sun_distance),
+            simulation.solar_luminosity,
+            simulation.albedo,
+            current_sun_distance.astype(np.float64),
             current_sunlight_direction.astype(np.float64),
-            bool(config.include_shadowing),
+            config.include_shadowing,
             shape_model_vertices.astype(np.float64)
         )
         for chunk_idx, (start_idx, end_idx) in enumerate(chunks)
@@ -220,22 +221,6 @@ def calculate_insolation_whole_orbit(thermal_data, shape_model, simulation, conf
     for chunk_idx, (start_idx, end_idx) in enumerate(chunks):
         insol_array[start_idx:end_idx] = results[chunk_idx]
         
-#    return insol_array
-#
-#    for chunk_idx, (start_idx, end_idx) in enumerate(chunks):
-#        thermal_data.insolation[start_idx:end_idx] = results[chunk_idx]
-#
-##    if config.n_scatters > 0:
-##        conditional_print(config.silent_mode, 
-##                        f"Applying light scattering with {config.n_scatters} iterations...")
-##        scattering_start = time.time()
-##        thermal_data = apply_scattering(thermal_data, shape_model, simulation, config,
-##                                      rotation_matrices, rotated_sunlight_directions)
-##        scattering_end = time.time()
-##        conditional_print(config.silent_mode, 
-##                        f"Time taken to apply light scattering: {scattering_end - scattering_start:.2f} seconds")
-#
-#    return thermal_data
         
     return insol_array, r_sunca, ugao_sunca
 
@@ -243,66 +228,6 @@ def calculate_insolation_whole_orbit(thermal_data, shape_model, simulation, conf
 
 
 
-     
-     
-     
-
-#def calculate_insolation_one_step(thermal_data, shape_model, simulation, config, time_from_aphelion_s):
-#    ''' 
-#    Calculate insolation for each facet at a single time step.
-#    '''
-#    n_facets = len(shape_model)
-#    
-#    current_sunlight_direction, current_sun_distance = sun_direction(time_from_aphelion_s, simulation)
-#    
-#    # Rotation matrix and rotated sunlight direction for this time instance
-#    rotation_matrix = calculate_rotation_matrix(
-#        simulation.rotation_axis, 
-#        (2 * np.pi / simulation.rotation_period_s) * time_from_aphelion_s
-#    )
-#    rotated_sunlight_direction = np.dot(rotation_matrix.T, current_sunlight_direction)
-#    rotated_sunlight_direction /= np.linalg.norm(rotated_sunlight_direction)
-#
-#    # Extract facet data
-#    normals = np.array([facet.normal for facet in shape_model], dtype=np.float64)
-#    positions = np.array([facet.position for facet in shape_model], dtype=np.float64)
-#    shape_model_vertices = np.array([facet.vertices for facet in shape_model], dtype=np.float64)
-#    # Prepare insolation array (n_facets x 1)
-#    insolation_step = np.zeros(n_facets, dtype=np.float64)
-#
-#    # Compute chunks for parallel processing
-#    if config.chunk_size <= 0:
-#        config.chunk_size = max(1, n_facets // (config.n_jobs * 4))
-#    chunks = [(i * config.chunk_size, min((i + 1) * config.chunk_size, n_facets))
-#              for i in range((n_facets + config.chunk_size - 1) // config.chunk_size)]
-#
-#    # Process chunks in parallel
-#    parallel = Parallel(n_jobs=config.n_jobs, verbose=0)
-#    results = parallel(
-#        delayed(process_insolation_chunk)(
-#            normals[start_idx:end_idx],
-#            positions[start_idx:end_idx],
-#            thermal_data.visible_facets[start_idx:end_idx],
-#            rotation_matrix,  # single timestep
-#            rotated_sunlight_direction[None, :],
-#            simulation.solar_luminosity,
-#            simulation.albedo,
-#            current_sun_distance * const.au.value,
-#            current_sunlight_direction.astype(np.float64),
-#            config.include_shadowing,
-#            shape_model_vertices
-#        )
-#        for start_idx, end_idx in chunks
-#    )
-#
-#    # Combine results
-#    for chunk_idx, (start_idx, end_idx) in enumerate(chunks):
-#        insolation_step[start_idx:end_idx] = results[chunk_idx]
-#
-#    # Upisi u thermal_data.insolation za taj trenutak
-#    thermal_data.insolation = insolation_step
-#
-#    return thermal_data
 
 
 
@@ -379,8 +304,11 @@ def process_insolation_chunk_orbit(normals, positions, visible_facets, rotation_
     for i in range(chunk_size):
         normal = normals[i]
         position = positions[i]
+        
+        
 
         for t in range(timesteps):
+                               
             new_normal = np.dot(rotation_matrices[t], normal)
             new_normal_norm = np.linalg.norm(new_normal)  # Precompute new normal vector norm
             
@@ -407,7 +335,7 @@ def process_insolation_chunk_orbit(normals, positions, visible_facets, rotation_
                     (1 - albedo) * 
                     illumination_factor * 
                     cos_zenith_angle / 
-                    (4 * np.pi * solar_distance_m**2)
+                    (4 * np.pi * solar_distance_m[t]**2)
                 )
     
     return insolation

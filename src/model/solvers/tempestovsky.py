@@ -392,7 +392,6 @@ class YarkovskySolver(TemperatureSolver):
             surface_history[:, t] = thermal_data.layer_temperatures[:, 0]
             mean_T[t] = np.mean(surface_history[:, t])
             mean_insolation[t] = np.mean(precomputed_insolation[:, t])
-            print('oblik insolacije', np.shape(precomputed_insolation[:, t]))
             
             if np.mod(t, 50) == 0:
                 print(f'step {t} out of {simulation.timesteps_per_orbit}, mean(T) = {np.round(mean_T[t], 2)}')

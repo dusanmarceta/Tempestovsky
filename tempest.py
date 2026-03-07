@@ -405,7 +405,17 @@ def main():
 
     
     thermal_data = calculate_insolation(thermal_data, shape_model, simulation, config)
+    
+    print('////////////////////////////////////////////////////////////')
+    print('INSOLACIJA - PRVI PUT')
+    
+    print(np.shape(thermal_data.insolation))
 
+    
+    print(np.mean(thermal_data.insolation[:, 0]))
+    print(np.mean(thermal_data.insolation[:, -1]))
+    
+    print('////////////////////////////////////////////////////////////')
     # If kernel-based roughness is enabled, process per-timestep sub-facet insolation in vectorized fashion
     if config.apply_kernel_based_roughness:
         n_facets = len(shape_model)
