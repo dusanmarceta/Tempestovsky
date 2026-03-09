@@ -117,23 +117,29 @@ def calculate_insolation_whole_orbit(thermal_data, shape_model, simulation, conf
     # Precompute rotation matrices and rotated sunlight directions
     rotation_matrices = np.zeros((simulation.timesteps_per_orbit, 3, 3), dtype=np.float64)
     rotated_sunlight_directions = np.zeros((simulation.timesteps_per_orbit, 3), dtype=np.float64)
+    current_sunlight_directions = np.zeros((simulation.timesteps_per_orbit, 3), dtype=np.float64)
     rotated_transfersal_directions = np.zeros((simulation.timesteps_per_orbit, 3), dtype=np.float64)
 
     current_sun_distance = np.zeros(simulation.timesteps_per_orbit)
     true_anomaly = np.zeros(simulation.timesteps_per_orbit)
     
+    
+    
     for t in range(simulation.timesteps_per_orbit):
         total_time = t * simulation.delta_t
            
-        current_sunlight_direction, current_sun_distance[t], true_anomaly[t] = sun_direction(total_time, simulation)
+        current_sunlight_directions[t], current_sun_distance[t], true_anomaly[t] = sun_direction(total_time, simulation)
+        
+        current_transfersal_direction = np.cross(current_sunlight_directions[t], np.array([0, 0, 1]))
+        
         rotation_matrix = calculate_rotation_matrix(simulation.rotation_axis, 
                                                  (2 * np.pi / simulation.timesteps_per_day) * t)
  
         rotation_matrices[t] = rotation_matrix
-        rotated_sunlight_directions[t] = np.dot(rotation_matrix.T, current_sunlight_direction)
+        rotated_sunlight_directions[t] = np.dot(rotation_matrix.T, current_sunlight_directions[t])
         rotated_sunlight_directions[t] /= np.linalg.norm(rotated_sunlight_directions[t])
         
-    rotated_transfersal_directions = np.cross(rotated_sunlight_directions, np.array([0, 0, 1]))
+        rotated_transfersal_directions[t] = np.dot(rotation_matrix.T, current_transfersal_direction)
     # Create chunks for parallel processing
     n_facets = len(shape_model)
     if config.chunk_size <= 0:
@@ -166,7 +172,7 @@ def calculate_insolation_whole_orbit(thermal_data, shape_model, simulation, conf
             rotated_sunlight_directions.astype(np.float64),
             simulation.albedo,
             current_sun_distance.astype(np.float64),
-            current_sunlight_direction.astype(np.float64),
+            current_sunlight_directions.astype(np.float64),
             config.include_shadowing,
             shape_model_vertices.astype(np.float64)
         )
@@ -181,7 +187,7 @@ def calculate_insolation_whole_orbit(thermal_data, shape_model, simulation, conf
         insol_array[start_idx:end_idx] = results[chunk_idx]
         
         
-    return insol_array, true_anomaly, current_sun_distance/const.au.value, rotated_sunlight_directions, rotated_transfersal_directions
+    return insol_array, true_anomaly, current_sun_distance/const.au.value, -rotated_sunlight_directions, -rotated_transfersal_directions
 
 
 
@@ -264,19 +270,19 @@ def process_insolation_chunk_orbit(normals, positions, visible_facets, rotation_
         normal = normals[i]
         position = positions[i]
         
-        
 
         for t in range(timesteps):
-                               
+            
+#            current_sunlight_direction = 
+#                               
             new_normal = np.dot(rotation_matrices[t], normal)
             new_normal_norm = np.linalg.norm(new_normal)  # Precompute new normal vector norm
             
+            sun_dot_normal = np.dot(sunlight_direction[t], new_normal)
             
-            
-            sun_dot_normal = np.dot(sunlight_direction, new_normal)
-            
+
             # Calculate cosine of zenith angle
-            cos_zenith_angle = sun_dot_normal / (np.linalg.norm(sunlight_direction) * new_normal_norm)
+            cos_zenith_angle = sun_dot_normal / (np.linalg.norm(sunlight_direction[t]) * new_normal_norm)
             
             if cos_zenith_angle > 0:
                 illumination_factor = 1

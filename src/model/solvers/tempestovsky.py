@@ -213,9 +213,11 @@ def calculate_yarkovsky(simulation, normals, areas, asteroid_mass, r_rad, r_tran
     R = np.dot(F, r_rad)
 
     
-    dadt = 2 * simulation.mean_motion * (simulation.a_au * const.au.value)**2 / const.GM_sun.value * (
-                    R * simulation.a_au * const.au.value * simulation.ecc * np.sin(true_anomaly) / np.sqrt(1-simulation.ecc**2) + 
-                    B * simulation.a_au**2 * const.au.value * np.sqrt(1-simulation.ecc**2) / sun_distance)/asteroid_mass
+#    dadt = 2 * simulation.mean_motion * (simulation.a_au * const.au.value)**2 / const.GM_sun.value * (
+#                    R * simulation.a_au * const.au.value * simulation.ecc * np.sin(true_anomaly) / np.sqrt(1-simulation.ecc**2) + 
+#                    B * simulation.a_au**2 * const.au.value * np.sqrt(1-simulation.ecc**2) / sun_distance)/asteroid_mass
+            
+    dadt = 2 * simulation.a_au / simulation.mean_motion / sun_distance * np.sqrt(1 - simulation.ecc**2) * B / asteroid_mass
             
   
     return dadt
@@ -243,8 +245,22 @@ class YarkovskySolver(TemperatureSolver):
         # Geometry for Yarkovsky
         
         volume, normals, areas = geometry_for_yarko(shape_model)
+        
+        
+        
+
+        
+        # indeks najblizi ekvatoru
+        idx_equator = np.argmin(np.abs(normals[:,2]))
+
+        
+        # indeks najblizi polu
+        idx_pole = np.argmax(np.abs(normals[:,2]))
 
         asteroid_mass = volume * simulation.density
+        
+        
+        poluprecnik = (3 * volume /4 / np.pi)**0.33333333333
 
         # Initialize constants
         const1 = simulation.delta_t / (simulation.layer_thickness * simulation.density * simulation.specific_heat_capacity)
@@ -369,6 +385,10 @@ class YarkovskySolver(TemperatureSolver):
 
         precomputed_insolation, true_anomaly, current_sun_distance, r_rad, r_trans = calculate_insolation_whole_orbit(thermal_data, shape_model, simulation, config)
         
+        
+#        np.savetxt('test/ekvator_10000.txt', precomputed_insolation[idx_equator])
+#        np.savetxt('test/pol_10000.txt', precomputed_insolation[idx_pole])
+# 
         print('**********************************************')
         print('**********************************************')
         print('**********************************************')
@@ -404,26 +424,46 @@ class YarkovskySolver(TemperatureSolver):
             if np.mod(t, 1000) == 0:
                 print(f'step {t} out of {simulation.timesteps_per_orbit}')
 
-
+        
 
         angles_rad = np.rad2deg(np.arctan2(r_rad[:,1], r_rad[:,0]))
         angles_trans = np.rad2deg(np.arctan2(r_trans[:,1], r_trans[:,0]))
+        
+        
+        vertikal_trans = np.rad2deg(np.arcsin(r_trans[:,2]))
+        
+        vertikal_rad = np.rad2deg(np.arcsin(r_rad[:,2]))
 
+        print('poluprecnik', poluprecnik)
+        print('drift', np.mean(drift))
 
         plt.figure()
         plt.plot(np.arange(simulation.timesteps_per_orbit)*simulation.delta_t/3600, drift)
         plt.title('DRIFT')
+        plt.grid()
         plt.show()
         
-        plt.figure()
-        plt.plot(np.arange(simulation.timesteps_per_orbit)*simulation.delta_t/3600, angles_rad)
-        plt.title('RAD')
-        plt.show()
-        
-        plt.figure()
-        plt.plot(np.arange(simulation.timesteps_per_orbit)*simulation.delta_t/3600, angles_trans)
-        plt.title('RANS')
-        plt.show()
+#        plt.figure()
+#        plt.plot(np.arange(simulation.timesteps_per_orbit)*simulation.delta_t/3600, angles_rad)
+#        plt.title('RAD')
+#        plt.show()
+#        
+#        plt.figure()
+#        plt.plot(np.arange(simulation.timesteps_per_orbit)*simulation.delta_t/3600, angles_trans)
+#        plt.title('TRANS')
+#        plt.show()
+#        
+#        
+#        plt.figure()
+#        plt.plot(np.arange(simulation.timesteps_per_orbit)*simulation.delta_t/3600, vertikal_rad)
+#        plt.title('vertikal RAD')
+#        plt.show()
+#        
+#        plt.figure()
+#        plt.plot(np.arange(simulation.timesteps_per_orbit)*simulation.delta_t/3600, vertikal_trans)
+#        plt.title('vertikal TRANS')
+#        plt.show()
+
         
         # plt.figure()
         # plt.plot(np.arange(simulation.timesteps_per_day)*simulation.delta_t/3600, np.rad2deg())
