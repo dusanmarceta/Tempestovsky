@@ -192,41 +192,33 @@ ADDED
 
 '''
 
-def calculate_yarkovsky(simulation, mean_motion, asteroid_mass, normals, areas, temperatures):
+def geometry_for_yarko(shape_model):
+    positions = np.array([facet.position for facet in shape_model])
+    normals   = np.array([facet.normal   for facet in shape_model])
+    areas     = np.array([facet.area     for facet in shape_model])
+
+    volume = (1.0 / 3.0) * np.sum(
+        areas * np.einsum('ij,ij->i', positions, normals)
+    )
+
+    return abs(volume), normals, areas
+
+def calculate_yarkovsky(simulation, normals, areas, asteroid_mass, r_rad, r_trans, true_anomaly, sun_distance, temperatures):
     
     F=2/3*simulation.emissivity*const.sigma_sb.value / const.c.value * np.sum(temperatures[:, None]**4 * normals * areas[:, None], axis=0)
- 
-    '''
-    OVO SREDITI!
-    '''
-    
-    true_anomaly = 0
-    sun_distance = 1
-    
-    r_trans = np.array([0, 1, 0])
-    r_rad = np.array([1, 0, 0])
-    
-    '''
-    dalje je sve OK
-    '''
-    
-    
+     
     B = np.dot(F, r_trans)
         
     # Radial thermal force
     R = np.dot(F, r_rad)
 
     
-    dadt = 2 * mean_motion * (simulation.a_au * const.au.value)**2 / const.GM_sun.value * (
+    dadt = 2 * simulation.mean_motion * (simulation.a_au * const.au.value)**2 / const.GM_sun.value * (
                     R * simulation.a_au * const.au.value * simulation.ecc * np.sin(true_anomaly) / np.sqrt(1-simulation.ecc**2) + 
                     B * simulation.a_au**2 * const.au.value * np.sqrt(1-simulation.ecc**2) / sun_distance)/asteroid_mass
             
   
     return dadt
-
-
-
-
 
 
 class YarkovskySolver(TemperatureSolver):
@@ -242,11 +234,17 @@ class YarkovskySolver(TemperatureSolver):
             "beaming_factor"
         ]
 
-    def solve(self, thermal_data, shape_model, asteroid_mass, normals, areas, simulation, mean_motion, config):
+    def solve(self, thermal_data, shape_model, simulation, config):
         ''' 
         This is the main calculation function for the thermophysical body model. It calls the necessary functions to read in the shape model, set material and model properties, calculate 
         insolation and temperature arrays, and iterate until the model converges.
         '''
+
+        # Geometry for Yarkovsky
+        
+        volume, normals, areas = geometry_for_yarko(shape_model)
+
+        asteroid_mass = volume * simulation.density
 
         # Initialize constants
         const1 = simulation.delta_t / (simulation.layer_thickness * simulation.density * simulation.specific_heat_capacity)
@@ -368,8 +366,8 @@ class YarkovskySolver(TemperatureSolver):
         print('**********************************************')
         print('**********************************************')
         print('Initialization finished')
-                
-        precomputed_insolation, r_sunca, ugao_sunca = calculate_insolation_whole_orbit(thermal_data, shape_model, simulation, config)
+
+        precomputed_insolation, true_anomaly, current_sun_distance, r_rad, r_trans = calculate_insolation_whole_orbit(thermal_data, shape_model, simulation, config)
         
         print('**********************************************')
         print('**********************************************')
@@ -382,38 +380,56 @@ class YarkovskySolver(TemperatureSolver):
         
         thermal_data.layer_temperatures = thermal_data.layer_temperatures[:, 1, :]
         
+        drift = np.zeros(simulation.timesteps_per_orbit)
         for t in range(simulation.timesteps_per_orbit):
+            
+            
             # KLJUČNI MOMENAT: 
             # Pozivamo funkciju i REZULTAT upisujemo nazad u thermal_data.
             # Tako u sledećoj iteraciji (t+1) funkcija uzima temperaturu od (t).
             thermal_data.layer_temperatures = update_thermal_state(thermal_data, precomputed_insolation[:, t], simulation)
 
+            surface_temperatures = thermal_data.layer_temperatures[:, 0]
             # Ovde možeš sačuvati površinsku temperaturu za ovaj trenutak ako ti treba za grafikon
-            surface_history[:, t] = thermal_data.layer_temperatures[:, 0]
+            surface_history[:, t] = surface_temperatures
+            
+            drift[t] = calculate_yarkovsky(simulation, normals, areas, asteroid_mass, 
+                                           r_rad[t], r_trans[t], true_anomaly[t], 
+                                           current_sun_distance[t], 
+                                           surface_temperatures)
+            
             mean_T[t] = np.mean(surface_history[:, t])
             mean_insolation[t] = np.mean(precomputed_insolation[:, t])
             
-            if np.mod(t, 50) == 0:
-                print(f'step {t} out of {simulation.timesteps_per_orbit}, mean(T) = {np.round(mean_T[t], 2)}')
+            if np.mod(t, 1000) == 0:
+                print(f'step {t} out of {simulation.timesteps_per_orbit}')
+
+
+
+        angles_rad = np.rad2deg(np.arctan2(r_rad[:,1], r_rad[:,0]))
+        angles_trans = np.rad2deg(np.arctan2(r_trans[:,1], r_trans[:,0]))
+
 
         plt.figure()
-        plt.plot(np.arange(simulation.timesteps_per_orbit) * simulation.delta_t, r_sunca)
-        plt.title('r_sunca', fontsize = 16)
-        plt.grid()
-        plt.show()
-        
-        
-        plt.figure()
-        plt.plot(np.arange(simulation.timesteps_per_orbit) * simulation.delta_t, mean_T)
-        plt.title('Mean surface temperature', fontsize = 16)
-        plt.grid()
+        plt.plot(np.arange(simulation.timesteps_per_orbit)*simulation.delta_t/3600, drift)
+        plt.title('DRIFT')
         plt.show()
         
         plt.figure()
-        plt.plot(np.arange(simulation.timesteps_per_orbit) * simulation.delta_t, mean_insolation)
-        plt.title('Mean insolation', fontsize = 16)
-        plt.grid()
+        plt.plot(np.arange(simulation.timesteps_per_orbit)*simulation.delta_t/3600, angles_rad)
+        plt.title('RAD')
         plt.show()
+        
+        plt.figure()
+        plt.plot(np.arange(simulation.timesteps_per_orbit)*simulation.delta_t/3600, angles_trans)
+        plt.title('RANS')
+        plt.show()
+        
+        # plt.figure()
+        # plt.plot(np.arange(simulation.timesteps_per_day)*simulation.delta_t/3600, np.rad2deg())
+        # plt.title('DRIFT')
+        # plt.show()
+        
         
         
         
@@ -424,6 +440,7 @@ class YarkovskySolver(TemperatureSolver):
             "final_timestep_temperatures": current_day_temperature[:, -1],
             "days_to_convergence": day,
             "mean_temperature_error": mean_temperature_error,
-            "max_temperature_error": max_temperature_error
+            "max_temperature_error": max_temperature_error,
+            "Yarkovsky drift": np.mean(drift)
         } 
             

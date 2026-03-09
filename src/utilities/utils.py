@@ -325,6 +325,6 @@ def sun_direction(time_from_aphelion, simulation):
      
 #     print(time_from_aphelion, direction)
      
-     return (direction/np.linalg.norm(direction), r * const.au.value)
+     return (direction/np.linalg.norm(direction), r * const.au.value, true_anomaly)
      
      
