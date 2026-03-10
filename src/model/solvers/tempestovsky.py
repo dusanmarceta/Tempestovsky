@@ -371,13 +371,106 @@ class YarkovskySolver(TemperatureSolver):
         print('**********************************************')
         print('**********************************************')
         print('**********************************************')
-        print('Initialization finished')
+        print('Diurnal Initialization finished')
         print('**********************************************')
         print('**********************************************')
         print('**********************************************')
         
         
+        number_of_orbit_sections = 3
         
+        
+        
+# 
+#        surface_history = np.zeros([len(areas), np.sum(timesteps_per_orbit_section)])
+#        
+#        mean_T = np.zeros(np.sum(timesteps_per_orbit_section))
+#        mean_insolation = np.zeros(np.sum(timesteps_per_orbit_section))
+#        drift = np.zeros(np.sum(timesteps_per_orbit_section))
+#        
+#        true_anomaly_orbit = np.zeros(np.sum(timesteps_per_orbit_section))
+#        r_sun = np.zeros(np.sum(timesteps_per_orbit_section))
+#        
+        
+        counter = 0
+        thermal_data.layer_temperatures = thermal_data.layer_temperatures[:, 1, :]
+        
+        if simulation.orbital_initialisation > 0:
+            
+            number_of_rotations = np.floor(simulation.orbital_period * simulation.orbital_initialisation/simulation.rotation_period_s)
+            simulation.orbital_initialisation = number_of_rotations * simulation.rotation_period_s / simulation.orbital_period
+            number_of_initial_sections = int(np.ceil(number_of_orbit_sections * simulation.orbital_initialisation))
+            timesteps_per_orbit_section = (np.ones(number_of_initial_sections) * np.ceil(simulation.timesteps_per_orbit/number_of_initial_sections * simulation.orbital_initialisation)).astype(int)
+            timesteps_per_orbit_section[-1] = np.ceil(simulation.timesteps_per_orbit * simulation.orbital_initialisation) - sum(timesteps_per_orbit_section[:-1]) - 1
+        
+        
+            for orbit_section in range(number_of_initial_sections):
+                
+                precomputed_insolation, true_anomaly, current_sun_distance, r_rad, r_trans = calculate_insolation_orbit_section(thermal_data, shape_model, simulation, config, timesteps_per_orbit_section, orbit_section, initialisation = 1)
+    
+                for t in range(timesteps_per_orbit_section[orbit_section]):
+        
+    
+                    thermal_data.layer_temperatures = update_thermal_state(thermal_data, precomputed_insolation[:, t], simulation)
+        
+    #                surface_temperatures = thermal_data.layer_temperatures[:, 0]
+    #                # Ovde možeš sačuvati površinsku temperaturu za ovaj trenutak ako ti treba za grafikon
+    #                surface_history[:, counter] = surface_temperatures
+    #                
+    #                drift[counter] = calculate_yarkovsky(simulation, normals, areas, asteroid_mass, 
+    #                                               r_rad[t], r_trans[t], true_anomaly[t], 
+    #                                               current_sun_distance[t], 
+    #                                               surface_temperatures)
+    #                
+    #                mean_T[counter] = np.mean(surface_history[:, counter])
+    #                mean_insolation[counter] = np.mean(precomputed_insolation[:, t])
+    #                
+    #                true_anomaly_orbit[counter] = true_anomaly[t]
+    #                r_sun[counter] = current_sun_distance[t]
+                    
+                    # if np.mod(counter, 1000) == 0:
+                    #     print(f'step {counter} out of {simulation.timesteps_per_orbit}, section: {orbit_section}')
+        
+                    
+            
+                    # angles_rad = np.rad2deg(np.arctan2(r_rad[:,1], r_rad[:,0]))
+                    # angles_trans = np.rad2deg(np.arctan2(r_trans[:,1], r_trans[:,0]))
+                    
+                    
+                    # vertikal_trans = np.rad2deg(np.arcsin(r_trans[:,2]))
+                    
+                    # vertikal_rad = np.rad2deg(np.arcsin(r_rad[:,2]))
+                    
+                    counter += 1
+
+
+#        plt.figure()
+#        plt.plot(np.arange(np.sum(timesteps_per_orbit_section))*simulation.delta_t/3600, mean_insolation)
+#        plt.title('INSOLATION (initialisation)')
+#        plt.grid()
+#        plt.show()
+#        
+#        plt.figure()
+#        plt.plot(np.arange(np.sum(timesteps_per_orbit_section))*simulation.delta_t/3600, mean_T)
+#        plt.title('MEAN T (initialisation)')
+#        plt.grid()
+#        plt.show()
+#        
+#        plt.figure()
+#        plt.plot(np.arange(np.sum(timesteps_per_orbit_section))*simulation.delta_t/3600, true_anomaly_orbit)
+#        plt.title('true anomaly (initialisation)')
+#        plt.grid()
+#        plt.show()
+        
+        
+        
+        print('**********************************************')
+        print('**********************************************')
+        print('**********************************************')
+        print('       Seasonal Initialization finished       ')
+        print('**********************************************')
+        print('**********************************************')
+        print('**********************************************')
         
         
         surface_history = np.zeros([len(areas), simulation.timesteps_per_orbit])
@@ -389,27 +482,26 @@ class YarkovskySolver(TemperatureSolver):
         true_anomaly_orbit = np.zeros(simulation.timesteps_per_orbit)
         r_sun = np.zeros(simulation.timesteps_per_orbit)
         
+        
+        
+        
+        
+        
         number_of_orbit_sections = 3
         timesteps_per_orbit_section = (np.ones(number_of_orbit_sections) * simulation.timesteps_per_orbit/number_of_orbit_sections).astype(int)
         timesteps_per_orbit_section[-1] = simulation.timesteps_per_orbit - sum(timesteps_per_orbit_section[:-1])
         
         
         counter = 0
-        thermal_data.layer_temperatures = thermal_data.layer_temperatures[:, 1, :]
+#        thermal_data.layer_temperatures = thermal_data.layer_temperatures[:, 1, :]
         for orbit_section in range(number_of_orbit_sections):
             
-            precomputed_insolation, true_anomaly, current_sun_distance, r_rad, r_trans = calculate_insolation_orbit_section(thermal_data, shape_model, simulation, config, timesteps_per_orbit_section, orbit_section)
+            precomputed_insolation, true_anomaly, current_sun_distance, r_rad, r_trans = calculate_insolation_orbit_section(thermal_data, shape_model, simulation, config, timesteps_per_orbit_section, orbit_section, initialisation = 0)
 
         
     #        np.savetxt('test/ekvator_10000.txt', precomputed_insolation[idx_equator])
     #        np.savetxt('test/pol_10000.txt', precomputed_insolation[idx_pole])
     # 
-    
-        
-        
-        
-            
-        
         
             for t in range(timesteps_per_orbit_section[orbit_section]):
     

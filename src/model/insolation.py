@@ -194,7 +194,7 @@ def calculate_insolation_whole_orbit(thermal_data, shape_model, simulation, conf
 
 
 
-def calculate_insolation_orbit_section(thermal_data, shape_model, simulation, config, timesteps_per_orbit_section, orbit_section):
+def calculate_insolation_orbit_section(thermal_data, shape_model, simulation, config, timesteps_per_orbit_section, orbit_section, initialisation):
     ''' 
     This function calculates the insolation for each facet of the body. It calculates the angle between the sun and each facet, and then calculates the insolation for each facet factoring in shadows. It writes the insolation to the data cube.
 
@@ -204,8 +204,10 @@ def calculate_insolation_orbit_section(thermal_data, shape_model, simulation, co
     # insolation_array = np.zeros((len(shape_model), simulation.timesteps_per_orbit))
     
     # Precompute rotation matrices and rotated sunlight directions
-    
-    total_time = np.sum(timesteps_per_orbit_section[:orbit_section]) * simulation.delta_t
+    if initialisation == 1:
+        total_time = np.sum(timesteps_per_orbit_section[:orbit_section]) * simulation.delta_t - simulation.orbital_period * simulation.orbital_initialisation
+    else:
+        total_time = np.sum(timesteps_per_orbit_section[:orbit_section]) * simulation.delta_t
     
     print('total time', total_time/86400)
     print('time steps', timesteps_per_orbit_section[orbit_section])

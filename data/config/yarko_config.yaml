@@ -8,17 +8,22 @@ silent_mode: false                  # Set to true when running batch jobs (suppr
 remote: false                       # Set to true when running on a remote server (suppresses plotting)
 
 # File paths
-shape_model_file: "500m_ico_sphere_80_facets.stl"  # Name of the shape model file in data/shape_models/
+shape_model_file: "500m_ico_sphere_1280_facets.stl"  # Name of the shape model file in data/shape_models/
 shape_model_directory: "data/shape_models/"    
 
 # Physical parameters
-thermal_inertia:        3000    # W m⁻² K⁻¹ s⁻½ - This is the main parameter that controls the thermal evolution of the body
+thermal_inertia:        3000    # W m⁻² K⁻¹ s⁻½ -
+density:                1000    # kg/m³
+specific_heat_capacity: 1000    # J/kg·K
 emissivity:             0.95         
 albedo:                 0.0              
 beaming_factor:         1.0
 
 # Model structure parameters
-n_layers:               45          # Number of depth layers in thermal model - try increasing this if the model doesn't converge
+
+n_skin_depths:          4          # 
+thicknes_0:             0.1          # 
+n_layers:               45          # 
 convergence_method:     "mean"      # Method to determine convergence: 'mean' or 'max' temperature difference between days
 convergence_target:     0.1         # Target temperature difference between days for convergence in K. Higher values will converge faster.
 max_days:               20          # Maximum number of days to run simulation
@@ -27,9 +32,10 @@ min_days:               1           # Minimum number of days to run simulation
 # Orbital and rotational parameters
 a_au:                   1           # Semi-major axis
 ecc:                    0           # Eccentricity
-rotation_period_hours:  8          # Rotation period of the object relative to the Sun
+rotation_period_hours:  8          # Syderic rotation 
 ra_degrees:             0           # Right ascension of the object's pole (0 is the vernal equinox)
-dec_degrees:            1          # Declination of the object's pole (90 is the north pole) BUG: setting to 0 causes the model to crash
+dec_degrees:            15          # Declination of the object's pole (90 is the north pole) BUG: setting to 0 causes the model to crash
+orbital_initialisation: 0.5
 
 # Advanced modelling options
 n_jobs:                 16          # Number of CPU cores to use for parallel processing (if set higher than available cores, the model will run on the available cores)
@@ -43,8 +49,7 @@ temp_solver:            "tempestovsky"   # Options: "tempest_standard" or "therm
 vf_rays:                1000                 # Number of rays to use for view factor calculations. 1000 is recommended for most cases.
 
 # TEMPEST Solver parameters: Used with TI and specific_heat_capacity to derive layer depth and skin depth. These should not affect the final temperature distribution once the model has converged.
-density: 1000                   # kg/m³
-specific_heat_capacity: 1000    # J/kg·K
+
 
 # Animation settings
 animate_final_day_temp_distribution: false  # 3D animation of final day temperatures
