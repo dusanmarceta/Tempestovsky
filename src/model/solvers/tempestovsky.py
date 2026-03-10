@@ -377,7 +377,7 @@ class YarkovskySolver(TemperatureSolver):
         print('**********************************************')
         
         
-        number_of_orbit_sections = 3
+        number_of_orbit_sections = 100
         
         
         
@@ -487,7 +487,7 @@ class YarkovskySolver(TemperatureSolver):
         
         
         
-        number_of_orbit_sections = 3
+#        number_of_orbit_sections = 3
         timesteps_per_orbit_section = (np.ones(number_of_orbit_sections) * simulation.timesteps_per_orbit/number_of_orbit_sections).astype(int)
         timesteps_per_orbit_section[-1] = simulation.timesteps_per_orbit - sum(timesteps_per_orbit_section[:-1])
         
