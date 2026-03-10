@@ -341,7 +341,7 @@ class YarkovskySolver(TemperatureSolver):
             
             
             
-        
+        print('pocetna srednja temperatura', np.mean(current_day_temperature[:, 0]))
 
         # Check for invalid temperatures
         for i in range(len(shape_model)):
@@ -395,13 +395,13 @@ class YarkovskySolver(TemperatureSolver):
         
         surface_history = np.zeros_like(precomputed_insolation)
         
-        mean_T = np.zeros(simulation.timesteps_per_orbit)
-        mean_insolation = np.zeros(simulation.timesteps_per_orbit)
+        mean_T = np.zeros(simulation.timesteps_per_orbit * 2)
+        mean_insolation = np.zeros(simulation.timesteps_per_orbit * 2)
         
         thermal_data.layer_temperatures = thermal_data.layer_temperatures[:, 1, :]
         
-        drift = np.zeros(simulation.timesteps_per_orbit)
-        for t in range(simulation.timesteps_per_orbit):
+        drift = np.zeros(simulation.timesteps_per_orbit * 2)
+        for t in range(simulation.timesteps_per_orbit * 2):
             
             
             # KLJUČNI MOMENAT: 
@@ -438,10 +438,29 @@ class YarkovskySolver(TemperatureSolver):
         print('drift', np.mean(drift))
 
         plt.figure()
-        plt.plot(np.arange(simulation.timesteps_per_orbit)*simulation.delta_t/3600, drift)
+        plt.plot(np.arange(simulation.timesteps_per_orbit * 2)*simulation.delta_t/3600, drift)
         plt.title('DRIFT')
         plt.grid()
         plt.show()
+        
+        
+        
+        plt.figure()
+        plt.plot(np.arange(simulation.timesteps_per_orbit * 2)*simulation.delta_t/3600, mean_T)
+        plt.title('T')
+        plt.grid()
+        plt.show()
+        
+        
+        plt.figure()
+        plt.plot(np.arange(simulation.timesteps_per_orbit * 2)*simulation.delta_t/3600, mean_insolation)
+        plt.title('insolation')
+        plt.grid()
+        plt.show()
+        
+        
+        
+        
         
 #        plt.figure()
 #        plt.plot(np.arange(simulation.timesteps_per_orbit)*simulation.delta_t/3600, angles_rad)

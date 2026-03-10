@@ -115,17 +115,17 @@ def calculate_insolation_whole_orbit(thermal_data, shape_model, simulation, conf
     # insolation_array = np.zeros((len(shape_model), simulation.timesteps_per_orbit))
     
     # Precompute rotation matrices and rotated sunlight directions
-    rotation_matrices = np.zeros((simulation.timesteps_per_orbit, 3, 3), dtype=np.float64)
-    rotated_sunlight_directions = np.zeros((simulation.timesteps_per_orbit, 3), dtype=np.float64)
-    current_sunlight_directions = np.zeros((simulation.timesteps_per_orbit, 3), dtype=np.float64)
-    rotated_transfersal_directions = np.zeros((simulation.timesteps_per_orbit, 3), dtype=np.float64)
+    rotation_matrices = np.zeros((simulation.timesteps_per_orbit*2, 3, 3), dtype=np.float64)
+    rotated_sunlight_directions = np.zeros((simulation.timesteps_per_orbit*2, 3), dtype=np.float64)
+    current_sunlight_directions = np.zeros((simulation.timesteps_per_orbit*2, 3), dtype=np.float64)
+    rotated_transfersal_directions = np.zeros((simulation.timesteps_per_orbit*2, 3), dtype=np.float64)
 
-    current_sun_distance = np.zeros(simulation.timesteps_per_orbit)
-    true_anomaly = np.zeros(simulation.timesteps_per_orbit)
+    current_sun_distance = np.zeros(simulation.timesteps_per_orbit*2)
+    true_anomaly = np.zeros(simulation.timesteps_per_orbit*2)
     
     
     
-    for t in range(simulation.timesteps_per_orbit):
+    for t in range(int(simulation.timesteps_per_orbit * 2)):
         total_time = t * simulation.delta_t
            
         current_sunlight_directions[t], current_sun_distance[t], true_anomaly[t] = sun_direction(total_time, simulation)
@@ -180,7 +180,7 @@ def calculate_insolation_whole_orbit(thermal_data, shape_model, simulation, conf
     )
        
 
-    insol_array = np.empty((len(normals), simulation.timesteps_per_orbit), dtype=np.float64)
+    insol_array = np.empty((len(normals), simulation.timesteps_per_orbit * 2), dtype=np.float64)
 
     # Popunjavamo array rezultatima po chunk-ovima
     for chunk_idx, (start_idx, end_idx) in enumerate(chunks):

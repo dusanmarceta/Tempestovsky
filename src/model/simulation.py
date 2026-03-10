@@ -34,6 +34,8 @@ class Simulation:
         self.thermal_diffusivity = self.thermal_conductivity / (self.density * self.specific_heat_capacity)
         self.timesteps_per_day = self.calculate_adaptive_timesteps() # Adaptive timestep for low thermal inertia stability
         self.delta_t = self.rotation_period_s / self.timesteps_per_day
+        
+        
  
         # ADDED
         self.mean_motion = np.sqrt(const.GM_sun.value / (self.a_au * const.au.value)**3)
