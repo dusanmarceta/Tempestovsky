@@ -198,6 +198,8 @@ def main():
     except Exception as e:
         print(f"Failed to load shape model: {e}")
         sys.exit(1)
+        
+        
     thermal_data = ThermalData(len(shape_model), simulation.timesteps_per_day, simulation.n_layers, simulation.max_days, config.calculate_energy_terms)
 
     conditional_print(config.silent_mode,  f"\nDerived model parameters:")

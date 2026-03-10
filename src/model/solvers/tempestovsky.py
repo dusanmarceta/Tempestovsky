@@ -8,9 +8,8 @@ import numpy as np
 from numba import jit
 from .base_solver import TemperatureSolver
 from src.utilities.utils import conditional_print
-from src.model.insolation import calculate_insolation, calculate_insolation_whole_orbit
+from src.model.insolation import calculate_insolation, calculate_insolation_whole_orbit, calculate_insolation_orbit_section
 from src.model.simulation import ThermalData_propagation
-import matplotlib.pyplot as plt
 import astropy.constants as const
 import time
 
@@ -109,12 +108,7 @@ def update_thermal_state(thermal_data, current_insolation, simulation):
     
     T_new[:, 0] = T[:, 0] + dT_surf
     
-#    print('----------------------------------------------------------------------')
-#    
-#    print(np.max(current_insolation))
-#    print(simulation.delta_t)
-#    print('Prethodna srednja temperatura = ',np.mean(T[:, 0]))
-#    print('Trenutna srednja temperatura = ',np.mean(T_new[:, 0]))
+
 
     return T_new
 
@@ -245,7 +239,7 @@ class YarkovskySolver(TemperatureSolver):
         # Geometry for Yarkovsky
         
         volume, normals, areas = geometry_for_yarko(shape_model)
-        
+        asteroid_mass = volume * simulation.density
         
         
 
@@ -253,13 +247,9 @@ class YarkovskySolver(TemperatureSolver):
         # indeks najblizi ekvatoru
         idx_equator = np.argmin(np.abs(normals[:,2]))
 
-        
         # indeks najblizi polu
         idx_pole = np.argmax(np.abs(normals[:,2]))
 
-        asteroid_mass = volume * simulation.density
-        
-        
         poluprecnik = (3 * volume /4 / np.pi)**0.33333333333
 
         # Initialize constants
@@ -382,64 +372,108 @@ class YarkovskySolver(TemperatureSolver):
         print('**********************************************')
         print('**********************************************')
         print('Initialization finished')
-
-        precomputed_insolation, true_anomaly, current_sun_distance, r_rad, r_trans = calculate_insolation_whole_orbit(thermal_data, shape_model, simulation, config)
-        
-        
-#        np.savetxt('test/ekvator_10000.txt', precomputed_insolation[idx_equator])
-#        np.savetxt('test/pol_10000.txt', precomputed_insolation[idx_pole])
-# 
         print('**********************************************')
         print('**********************************************')
         print('**********************************************')
         
-        surface_history = np.zeros_like(precomputed_insolation)
+        
+        
+        
+        
+        surface_history = np.zeros([len(areas), simulation.timesteps_per_orbit])
         
         mean_T = np.zeros(simulation.timesteps_per_orbit)
         mean_insolation = np.zeros(simulation.timesteps_per_orbit)
-        
-        thermal_data.layer_temperatures = thermal_data.layer_temperatures[:, 1, :]
-        
         drift = np.zeros(simulation.timesteps_per_orbit)
-        for t in range(simulation.timesteps_per_orbit):
+        
+        true_anomaly_orbit = np.zeros(simulation.timesteps_per_orbit)
+        r_sun = np.zeros(simulation.timesteps_per_orbit)
+        
+        number_of_orbit_sections = 3
+        timesteps_per_orbit_section = (np.ones(number_of_orbit_sections) * simulation.timesteps_per_orbit/number_of_orbit_sections).astype(int)
+        timesteps_per_orbit_section[-1] = simulation.timesteps_per_orbit - sum(timesteps_per_orbit_section[:-1])
+        
+        
+        counter = 0
+        thermal_data.layer_temperatures = thermal_data.layer_temperatures[:, 1, :]
+        for orbit_section in range(number_of_orbit_sections):
             
-            
-            # KLJUČNI MOMENAT: 
-            # Pozivamo funkciju i REZULTAT upisujemo nazad u thermal_data.
-            # Tako u sledećoj iteraciji (t+1) funkcija uzima temperaturu od (t).
-            thermal_data.layer_temperatures = update_thermal_state(thermal_data, precomputed_insolation[:, t], simulation)
-
-            surface_temperatures = thermal_data.layer_temperatures[:, 0]
-            # Ovde možeš sačuvati površinsku temperaturu za ovaj trenutak ako ti treba za grafikon
-            surface_history[:, t] = surface_temperatures
-            
-            drift[t] = calculate_yarkovsky(simulation, normals, areas, asteroid_mass, 
-                                           r_rad[t], r_trans[t], true_anomaly[t], 
-                                           current_sun_distance[t], 
-                                           surface_temperatures)
-            
-            mean_T[t] = np.mean(surface_history[:, t])
-            mean_insolation[t] = np.mean(precomputed_insolation[:, t])
-            
-            if np.mod(t, 1000) == 0:
-                print(f'step {t} out of {simulation.timesteps_per_orbit}')
+            precomputed_insolation, true_anomaly, current_sun_distance, r_rad, r_trans = calculate_insolation_orbit_section(thermal_data, shape_model, simulation, config, timesteps_per_orbit_section, orbit_section)
 
         
-
-        angles_rad = np.rad2deg(np.arctan2(r_rad[:,1], r_rad[:,0]))
-        angles_trans = np.rad2deg(np.arctan2(r_trans[:,1], r_trans[:,0]))
+    #        np.savetxt('test/ekvator_10000.txt', precomputed_insolation[idx_equator])
+    #        np.savetxt('test/pol_10000.txt', precomputed_insolation[idx_pole])
+    # 
+    
         
         
-        vertikal_trans = np.rad2deg(np.arcsin(r_trans[:,2]))
         
-        vertikal_rad = np.rad2deg(np.arcsin(r_rad[:,2]))
+            
+        
+        
+            for t in range(timesteps_per_orbit_section[orbit_section]):
+    
+                
+                
+                # KLJUČNI MOMENAT: 
+                # Pozivamo funkciju i REZULTAT upisujemo nazad u thermal_data.
+                # Tako u sledećoj iteraciji (t+1) funkcija uzima temperaturu od (t).
+                thermal_data.layer_temperatures = update_thermal_state(thermal_data, precomputed_insolation[:, t], simulation)
+    
+                surface_temperatures = thermal_data.layer_temperatures[:, 0]
+                # Ovde možeš sačuvati površinsku temperaturu za ovaj trenutak ako ti treba za grafikon
+                surface_history[:, counter] = surface_temperatures
+                
+                drift[counter] = calculate_yarkovsky(simulation, normals, areas, asteroid_mass, 
+                                               r_rad[t], r_trans[t], true_anomaly[t], 
+                                               current_sun_distance[t], 
+                                               surface_temperatures)
+                
+                mean_T[counter] = np.mean(surface_history[:, counter])
+                mean_insolation[counter] = np.mean(precomputed_insolation[:, t])
+                
+                true_anomaly_orbit[counter] = true_anomaly[t]
+                r_sun[counter] = current_sun_distance[t]
+                
+                # if np.mod(counter, 1000) == 0:
+                #     print(f'step {counter} out of {simulation.timesteps_per_orbit}, section: {orbit_section}')
+    
+                
+        
+                # angles_rad = np.rad2deg(np.arctan2(r_rad[:,1], r_rad[:,0]))
+                # angles_trans = np.rad2deg(np.arctan2(r_trans[:,1], r_trans[:,0]))
+                
+                
+                # vertikal_trans = np.rad2deg(np.arcsin(r_trans[:,2]))
+                
+                # vertikal_rad = np.rad2deg(np.arcsin(r_rad[:,2]))
+                
+                counter += 1
 
         print('poluprecnik', poluprecnik)
         print('drift', np.mean(drift))
 
         plt.figure()
-        plt.plot(np.arange(simulation.timesteps_per_orbit)*simulation.delta_t/3600, drift)
-        plt.title('DRIFT')
+        plt.plot(np.arange(simulation.timesteps_per_orbit)*simulation.delta_t/3600, mean_insolation)
+        plt.title('INSOLATION')
+        plt.grid()
+        plt.show()
+        
+        plt.figure()
+        plt.plot(np.arange(simulation.timesteps_per_orbit)*simulation.delta_t/3600, mean_T)
+        plt.title('MEAN t')
+        plt.grid()
+        plt.show()
+        
+        plt.figure()
+        plt.plot(np.arange(simulation.timesteps_per_orbit)*simulation.delta_t/3600, true_anomaly_orbit)
+        plt.title('true anomaly')
+        plt.grid()
+        plt.show()
+        
+        plt.figure()
+        plt.plot(np.arange(simulation.timesteps_per_orbit)*simulation.delta_t/3600, r_sun)
+        plt.title('r Sun')
         plt.grid()
         plt.show()
         

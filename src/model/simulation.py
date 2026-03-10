@@ -38,7 +38,6 @@ class Simulation:
         # ADDED
         self.mean_motion = np.sqrt(const.GM_sun.value / (self.a_au * const.au.value)**3)
         self.orbital_period = 2*np.pi / self.mean_motion
-#        self.timesteps_per_orbit = int(np.ceil(self.orbital_period / self.delta_t/1753.233*100))
         self.timesteps_per_orbit = int(np.ceil(self.orbital_period / self.delta_t))
         
 
@@ -48,6 +47,7 @@ class Simulation:
         # Compute unit vector from RA and Dec
         ra_radians = np.radians(self.ra_degrees)
         dec_radians = np.radians(self.dec_degrees)
+        
         self.rotation_axis = np.array([np.cos(ra_radians) * np.cos(dec_radians), 
                                        np.sin(ra_radians) * np.cos(dec_radians), 
                                        np.sin(dec_radians)])
