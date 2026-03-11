@@ -209,8 +209,8 @@ def calculate_insolation_orbit_section(thermal_data, shape_model, simulation, co
     else:
         total_time = np.sum(timesteps_per_orbit_section[:orbit_section]) * simulation.delta_t
     
-    print('total time', total_time/86400)
-    print('time steps', timesteps_per_orbit_section[orbit_section])
+#    print('total time', total_time/86400)
+#    print('time steps', timesteps_per_orbit_section[orbit_section])
     
     rotation_matrices = np.zeros((timesteps_per_orbit_section[orbit_section], 3, 3), dtype=np.float64)
     rotated_sunlight_directions = np.zeros((timesteps_per_orbit_section[orbit_section], 3), dtype=np.float64)
@@ -238,10 +238,6 @@ def calculate_insolation_orbit_section(thermal_data, shape_model, simulation, co
         
         rotated_transfersal_directions[t] = np.dot(rotation_matrix.T, current_transfersal_direction)
      
-    print('timesteps_per_orbit_section[orbit_section]', timesteps_per_orbit_section[orbit_section])
-    print('total time na kraju', total_time)
-    print('delta_t', simulation.delta_t)
-    print('t', t)
     # Create chunks for parallel processing
     n_facets = len(shape_model)
     if config.chunk_size <= 0:
@@ -267,7 +263,8 @@ def calculate_insolation_orbit_section(thermal_data, shape_model, simulation, co
 
     results = parallel(
         delayed(process_insolation_chunk_orbit)(
-            print(f"Processing chunk {chunk_idx+1} of {n_chunks} (indices {start_idx}:{end_idx}), orbit section {orbit_section + 1} out of {len(timesteps_per_orbit_section)}", flush=True) or normals[start_idx:end_idx].astype(np.float64),
+             (print(f"Processing chunk {chunk_idx+1} of {n_chunks} (indices {start_idx}:{end_idx}), orbit section {orbit_section + 1} out of {len(timesteps_per_orbit_section)}", flush=True)
+             if start_idx == 0 else None) or normals[start_idx:end_idx].astype(np.float64),
             positions[start_idx:end_idx].astype(np.float64),
             np.array(visible_facets_arrays[start_idx:end_idx], dtype=object),
             rotation_matrices.astype(np.float64),

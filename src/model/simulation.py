@@ -33,7 +33,7 @@ class Simulation:
         
         
         
-        self.layer_thickness = 8 * self.skin_depth / self.n_layers
+        self.layer_thickness = self.n_skin_depths * self.skin_depth / self.n_layers
         self.thermal_diffusivity = self.thermal_conductivity / (self.density * self.specific_heat_capacity)
         self.timesteps_per_day = self.calculate_adaptive_timesteps() # Adaptive timestep for low thermal inertia stability
         self.delta_t = self.rotation_period_s / self.timesteps_per_day
