@@ -90,17 +90,19 @@ def calculate_temperatures_thickness(temperatures, layer_temperatures, insolatio
     for time_step in range(timesteps_per_day):
         # Swap columns
         current_column, prev_column = prev_column, current_column
+                
+        if time_step == 10:
+            break
         
-        print('-------------GRESKA--------------')
-        
-        print(np.shape(temperatures))
-        break
         for i in range(n_facets):
             
             
             # Površinski sloj
             prev_temp = layer_temperatures[i, prev_column, 0]
             prev_temp_layer1 = layer_temperatures[i, prev_column, 1]
+            
+            
+
             
 
             
@@ -121,6 +123,12 @@ def calculate_temperatures_thickness(temperatures, layer_temperatures, insolatio
 
             
             conducted_heat_term = const3[0] * (prev_temp_layer1 - prev_temp)
+            
+            if i<5:
+                print(conducted_heat_term)
+                print('const3[0]', const3[0])
+            if i==5:
+                print('------------------------------------------')
             
             new_temp = prev_temp + insolation_term + re_emitted_term + conducted_heat_term + secondary_radiation_term
             
@@ -146,7 +154,7 @@ def calculate_temperatures_thickness(temperatures, layer_temperatures, insolatio
             conducted_bottom = const3[-1] * (prev_bottom_minus - prev_bottom)
             layer_temperatures[i, current_column, n_layers - 1] = prev_bottom + conducted_bottom
             
-        break
+        
             
     return temperatures
 
