@@ -52,6 +52,7 @@ def calculate_temperatures(temperatures, layer_temperatures, insolation, visible
             
             conducted_heat_term = const3 * (prev_temp_layer1 - prev_temp)
             
+            
             new_temp = (prev_temp + 
                     insolation_term + 
                     re_emitted_radiation_term + 
@@ -74,6 +75,79 @@ def calculate_temperatures(temperatures, layer_temperatures, insolation, visible
                             prev_layer_minus)
                 )
                     
+    return temperatures
+
+
+
+def calculate_temperatures_thickness(temperatures, layer_temperatures, insolation, visible_facets_list, 
+                           view_factors_list, const1, const2, const3, self_heating_const,
+                           dz_center_up, dz_center_down, timesteps_per_day, n_layers, include_self_heating):
+
+    n_facets = temperatures.shape[0]
+    current_column = 0
+    prev_column = 1
+    
+    for time_step in range(timesteps_per_day):
+        # Swap columns
+        current_column, prev_column = prev_column, current_column
+        
+        print('-------------GRESKA--------------')
+        
+        print(np.shape(temperatures))
+        break
+        for i in range(n_facets):
+            
+            
+            # Površinski sloj
+            prev_temp = layer_temperatures[i, prev_column, 0]
+            prev_temp_layer1 = layer_temperatures[i, prev_column, 1]
+            
+
+            
+            insolation_term = insolation[i, time_step] * const1[0]
+            re_emitted_term = -const2[0] * prev_temp**4
+            
+            secondary_radiation_term = 0.0
+            if include_self_heating:
+                secondary_radiation_term = calculate_secondary_radiation(
+                    layer_temperatures[:, prev_column, 0],
+                    visible_facets_list[i],
+                    view_factors_list[i],
+                    self_heating_const[0]
+                )
+            
+            
+            
+
+            
+            conducted_heat_term = const3[0] * (prev_temp_layer1 - prev_temp)
+            
+            new_temp = prev_temp + insolation_term + re_emitted_term + conducted_heat_term + secondary_radiation_term
+            
+            temperatures[i, time_step] = new_temp
+            layer_temperatures[i, current_column, 0] = new_temp
+            
+            # Srednji slojevi
+            for layer in range(1, n_layers - 1):
+                prev_layer = layer_temperatures[i, prev_column, layer]
+                prev_layer_plus = layer_temperatures[i, prev_column, layer + 1]
+                prev_layer_minus = layer_temperatures[i, prev_column, layer - 1]
+                                
+                conducted_heat_layer = const3[layer] * 2.0 / (dz_center_up[layer] + dz_center_down[layer]) * (
+                    (prev_layer_plus - prev_layer) / dz_center_up[layer] - (prev_layer - prev_layer_minus) / dz_center_down[layer]
+                )
+                
+                layer_temperatures[i, current_column, layer] = prev_layer + conducted_heat_layer
+            
+            # Donji sloj (n_layers-1)
+            prev_bottom = layer_temperatures[i, prev_column, n_layers - 1]
+            prev_bottom_minus = layer_temperatures[i, prev_column, n_layers - 2]
+            
+            conducted_bottom = const3[-1] * (prev_bottom_minus - prev_bottom)
+            layer_temperatures[i, current_column, n_layers - 1] = prev_bottom + conducted_bottom
+            
+        break
+            
     return temperatures
 
 
@@ -114,23 +188,12 @@ def update_thermal_state_thickness(thermal_data, current_insolation, simulation)
     T = thermal_data.layer_temperatures
     T_new = np.copy(T)
 
-    dz = simulation.layer_thickness
-
-    coeff = simulation.thermal_diffusivity * simulation.delta_t / (np.min(dz)**2)
-    
-    if coeff > 0.5:
-        print("Upozorenje: Model je numerički nestabilan.")
-
-    # rastojanja između centara slojeva
-    dz_center_up = (dz[1:-1] + dz[2:]) / 2
-    dz_center_down = (dz[:-2] + dz[1:-1]) / 2
-
     # temperaturni gradijenti
-    grad_up = (T[:, 2:] - T[:, 1:-1]) / dz_center_up
-    grad_down = (T[:, 1:-1] - T[:, :-2]) / dz_center_down
+    grad_up = (T[:, 2:] - T[:, 1:-1]) / simulation.dz_center_up
+    grad_down = (T[:, 1:-1] - T[:, :-2]) / simulation.dz_center_down
 
     # divergencija fluksa
-    laplacian = (grad_up - grad_down) / dz[1:-1]
+    laplacian = (grad_up - grad_down) / simulation.dz[1:-1]
 
     T_new[:, 1:-1] = T[:, 1:-1] + simulation.thermal_diffusivity * simulation.delta_t * laplacian
 
@@ -138,11 +201,11 @@ def update_thermal_state_thickness(thermal_data, current_insolation, simulation)
     T_new[:, -1] = T_new[:, -2]
 
     # provodjenje sa površine u podzemlje (centar-centar)
-    dz_surface = (dz[0] + dz[1]) / 2
+    dz_surface = (simulation.dz[0] + simulation.dz[1]) / 2
     conduction_to_subsurface = simulation.thermal_conductivity * (T[:, 0] - T[:, 1]) / dz_surface
 
     # energetski bilans površinskog sloja
-    dT_surf = (simulation.delta_t / (simulation.density * simulation.specific_heat_capacity * dz[0])) * (
+    dT_surf = (simulation.delta_t / (simulation.density * simulation.specific_heat_capacity * simulation.dz[0])) * (
         current_insolation
         - simulation.emissivity * const.sigma_sb.value * T[:, 0]**4
         - conduction_to_subsurface
@@ -226,12 +289,15 @@ class YarkovskySolver(TemperatureSolver):
         idx_pole = np.argmax(np.abs(normals[:,2]))
 
         poluprecnik = (3 * volume /4 / np.pi)**0.33333333333
+        
+        
+        
 
         # Initialize constants
-        const1 = simulation.delta_t / (simulation.layer_thickness * simulation.density * simulation.specific_heat_capacity)
-        const2 = simulation.emissivity * simulation.beaming_factor * 5.67e-8 * simulation.delta_t / (simulation.layer_thickness * simulation.density * simulation.specific_heat_capacity)
-        const3 = simulation.thermal_diffusivity * simulation.delta_t / simulation.layer_thickness**2
-        self_heating_const = 5.670374419e-8 * simulation.delta_t * simulation.emissivity**2 / (simulation.layer_thickness * simulation.density * simulation.specific_heat_capacity)
+        const1 = simulation.delta_t / (simulation.dz * simulation.density * simulation.specific_heat_capacity)
+        const2 = simulation.emissivity * simulation.beaming_factor * 5.67e-8 * simulation.delta_t / (simulation.dz * simulation.density * simulation.specific_heat_capacity)
+        const3 = simulation.thermal_diffusivity * simulation.delta_t / simulation.dz**2
+        self_heating_const = 5.670374419e-8 * simulation.delta_t * simulation.emissivity**2 / (simulation.dz * simulation.density * simulation.specific_heat_capacity)
 
         convergence_error = simulation.convergence_target + 1
         day = 0
@@ -241,16 +307,19 @@ class YarkovskySolver(TemperatureSolver):
         # Initialization
 
         while day < simulation.max_days and (day < simulation.min_days or convergence_error > simulation.convergence_target):
-            current_day_temperature = calculate_temperatures(
+            current_day_temperature = calculate_temperatures_thickness(
                 thermal_data.temperatures,
                 thermal_data.layer_temperatures,
                 thermal_data.insolation,
                 thermal_data.visible_facets,
                 thermal_data.thermal_view_factors,
-                const1, const2, const3, self_heating_const,
+                const1, const2, const3, self_heating_const, 
+                simulation.dz_center_up, simulation.dz_center_down, # distances between consecutive layers
                 simulation.timesteps_per_day, simulation.n_layers,
                 config.include_self_heating
             )
+            
+
 
             # Check for invalid temperatures
             for i in range(len(shape_model)):
@@ -355,11 +424,10 @@ class YarkovskySolver(TemperatureSolver):
         number_of_orbit_sections = 100
         
         
-        
-# 
 
-#        
-        
+        if simulation.thermal_diffusivity * simulation.delta_t / (np.min(simulation.dz)**2) > 0.5:
+            print("Warning: Model is numerically unstable")
+            
         counter = 0
         thermal_data.layer_temperatures = thermal_data.layer_temperatures[:, 1, :]
         

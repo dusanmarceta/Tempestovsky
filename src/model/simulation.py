@@ -40,37 +40,33 @@ class Simulation:
             
             self.skin_depth = skin_depth_seasonal
             
-            total_thickness = self.n_skin_depths * self.skin_depth
+            self.total_thickness = self.n_skin_depths * self.skin_depth
             self.first_layer_thickness = self.thicknes_0 * self.skin_depth
           
         elif self.yarkovsky_component == 'diurnal':
             
             self.skin_depth = skin_depth_diurnal
             
-            total_thickness = self.n_skin_depths * self.skin_depth
+            self.total_thickness = self.n_skin_depths * self.skin_depth
             self.first_layer_thickness = self.thicknes_0 * self.skin_depth
             
         elif self.yarkovsky_component == 'general':
             
             self.skin_depth = np.min([skin_depth_diurnal, skin_depth_seasonal])
             
-            total_thickness = self.n_skin_depths * np.max([self.skin_depth_seasonal, self.skin_depth_diurnal])
-            self.first_layer_thickness = self.thicknes_0 * self.skin_depthl
+            self.total_thickness = self.n_skin_depths * np.max([skin_depth_seasonal, skin_depth_diurnal])
+            self.first_layer_thickness = self.thicknes_0 * self.skin_depth
             
+
+        self.dz, self.dz_center_up, self.dz_center_down = self.calculate_layer_thicknesses()
         
-        self.dz, self.dz_center_up, self.dz_center_down = self.calculate_layer_thicknesses(total_thickness, self.first_layer_thickness, self.n_layers)
-        
-        
-        
-        
+
         self.thermal_diffusivity = self.thermal_conductivity / (self.density * self.specific_heat_capacity)
         self.timesteps_per_day = self.calculate_adaptive_timesteps() # Adaptive timestep for low thermal inertia stability
         self.delta_t = self.rotation_period_s / self.timesteps_per_day
  
         
         self.timesteps_per_orbit = int(np.ceil(self.orbital_period / self.delta_t))
-        
-
         
 #        self.timesteps_per_orbit = int(np.ceil(self.orbital_period / self.delta_t))
         
@@ -119,7 +115,13 @@ class Simulation:
             return timesteps_cfl
         
         
-    def calculate_layer_thicknesses(D, x1, N):
+    def calculate_layer_thicknesses(self):
+        
+        D = self.total_thickness
+        x1 = self.first_layer_thickness
+        N = self.n_layers
+        
+        print(D, x1, N)
     
         if D/x1 < N: # if the first section is to large so that other must be decreased to reach N sections
             # we set equidistant division so that the section size is smaller than the required first section x1
@@ -150,15 +152,79 @@ class Simulation:
             # Kreiraj tačke podele
             layer_depths = np.concatenate(([0], np.cumsum(steps)))
             
-            dz = np.diff(layer_depths)
-            
-            dz_center_up = (dz[1:-1] + dz[2:]) / 2
-            dz_center_down = (dz[:-2] + dz[1:-1]) / 2
-            # layer_thicknesses = np.insert(layer_thicknesses, 0, layer_depths[0])
+        dz = np.diff(layer_depths)
+ 
+        dz_center_up = np.empty(len(dz))
+        dz_center_down = np.empty(len(dz))
+        
+        # Površinski sloj
+        dz_center_up[0] = np.inf
+        dz_center_down[0] = 0.5 * dz[0] + 0.5 * dz[1]
+        
+        # Srednji slojevi (samo unutrašnji)
+        for layer in range(1, len(dz) - 1):
+            dz_center_up[layer] = 0.5 * dz[layer] + 0.5 * dz[layer - 1]    # do centra sloja iznad
+            dz_center_down[layer] = 0.5 * dz[layer] + 0.5 * dz[layer + 1]  # do centra sloja ispod
+        
+        # Donji sloj
+        dz_center_up[-1] = 0.5 * dz[-1] + 0.5 * dz[-2]
+        dz_center_down[-1] = np.inf
         
         return dz, dz_center_up, dz_center_down
         
+    
+    
+def calculate_layer_thicknesses_proba(D, x1, N):
+    
+
+    if D/x1 < N: # if the first section is to large so that other must be decreased to reach N sections
+        # we set equidistant division so that the section size is smaller than the required first section x1
         
+        N = int(np.ceil(D/x1)) + 1 
+        
+        layer_depths = np.linspace(0, D, N)
+    
+    else:
+        # Funkcija koja vraća grešku za dati r
+        def error(r):
+            return x1 * (r**N - 1) / (r - 1) - D
+    
+        # Početna procena za r
+        initial_guess = 1.1
+        
+        # Izračunaj r pomoću fsolve (Newton-Raphson metoda)
+        r_solution = fsolve(error, initial_guess)[0]
+        
+        
+        
+        # Generiši korake koristeći izračunat r
+        steps = x1 * r_solution ** np.arange(N)
+        
+        # Podesi korake tako da njihov zbir bude tačno D
+        steps *= D / np.sum(steps)
+    
+        # Kreiraj tačke podele
+        layer_depths = np.concatenate(([0], np.cumsum(steps)))
+        
+    dz = np.diff(layer_depths)
+    
+    dz_center_up = np.empty(len(dz))
+    dz_center_down = np.empty(len(dz))
+    
+    # Površinski sloj
+    dz_center_up[0] = np.inf
+    dz_center_down[0] = 0.5 * dz[0] + 0.5 * dz[1]
+    
+    # Srednji slojevi (samo unutrašnji)
+    for layer in range(1, len(dz) - 1):
+        dz_center_up[layer] = 0.5 * dz[layer] + 0.5 * dz[layer - 1]    # do centra sloja iznad
+        dz_center_down[layer] = 0.5 * dz[layer] + 0.5 * dz[layer + 1]  # do centra sloja ispod
+    
+    # Donji sloj
+    dz_center_up[-1] = 0.5 * dz[-1] + 0.5 * dz[-2]
+    dz_center_down[-1] = np.inf
+    
+    return dz, dz_center_up, dz_center_down
     
 
 class ThermalData:

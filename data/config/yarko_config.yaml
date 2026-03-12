@@ -21,9 +21,9 @@ beaming_factor:         1.0
 
 # Model structure parameters
 
-n_skin_depths:          100          # 
-thicknes_0:             0.1          # 
-n_layers:               1000          # 
+n_skin_depths:          8          # 
+thicknes_0:             0.17777777777777778          # 
+n_layers:               45          # 
 convergence_method:     "mean"      # Method to determine convergence: 'mean' or 'max' temperature difference between days
 convergence_target:     0.1         # Target temperature difference between days for convergence in K. Higher values will converge faster.
 max_days:               20          # Maximum number of days to run simulation
@@ -38,7 +38,7 @@ dec_degrees:            1          # Declination of the object's pole (90 is the
 orbital_initialisation: 1.75
 
 # Yarkovsky effect related parameters
-seasonal_effect: "yes"
+yarkovsky_component: "diurnal"
 
 # Advanced modelling options
 n_jobs:                 16          # Number of CPU cores to use for parallel processing (if set higher than available cores, the model will run on the available cores)

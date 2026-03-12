@@ -204,7 +204,7 @@ def main():
 
     conditional_print(config.silent_mode,  f"\nDerived model parameters:")
     conditional_print(config.silent_mode,  f"Number of timesteps per day: {simulation.timesteps_per_day}")
-    conditional_print(config.silent_mode,  f"Layer thickness: {simulation.layer_thickness} m")
+    conditional_print(config.silent_mode,  f"Total thickness: {simulation.total_thickness} m")
     conditional_print(config.silent_mode,  f"Thermal inertia: {simulation.thermal_inertia} W m^-2 K^-1 s^0.5")
     conditional_print(config.silent_mode,  f"Skin depth: {simulation.skin_depth} m")
     conditional_print(config.silent_mode,  f"\n Number of facets: {len(shape_model)}")
