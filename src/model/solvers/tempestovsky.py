@@ -29,15 +29,21 @@ def calculate_temperatures(temperatures, layer_temperatures, insolation, visible
     current_column = 0  # Use column 0 for current timestep
     prev_column = 1    # Use column 1 for previous timestep
     
+    print('GRESKA')
     for time_step in range(timesteps_per_day):
         # Swap columns for next iteration
         current_column, prev_column = prev_column, current_column
+        
+        
+        
         
         for i in range(n_facets):
             # Surface temperature calculation
             prev_temp = layer_temperatures[i, prev_column, 0]
             prev_temp_layer1 = layer_temperatures[i, prev_column, 1]
             
+            
+            print(prev_temp, prev_temp_layer1)
             insolation_term = insolation[i, time_step] * const1
             re_emitted_radiation_term = -const2 * (prev_temp**4)
             
