@@ -83,9 +83,7 @@ def update_thermal_state(thermal_data, current_insolation, simulation):
     thermal_data.layer_temperatures: (n_facets, n_layers) - trenutne temperature
     current_insolation: (n_facets) - fluks za ovaj specifični trenutak na orbiti
     '''
-    
     T = thermal_data.layer_temperatures
-
     T_new = np.copy(T)
 
     coeff = simulation.thermal_diffusivity * simulation.delta_t / (simulation.layer_thickness**2)
@@ -100,84 +98,61 @@ def update_thermal_state(thermal_data, current_insolation, simulation):
     # Dodajemo [:, 0] i [:, 1] da bi rezultat bio (1266,) a ne (1266, 45)
     conduction_to_subsurface = simulation.thermal_conductivity * (T[:, 0] - T[:, 1]) / simulation.layer_thickness
 
-    
     # Sada će ova linija raditi jer su svi nizovi (1266,)
     dT_surf = (simulation.delta_t / (simulation.density * simulation.specific_heat_capacity * simulation.layer_thickness)) * (current_insolation - simulation.emissivity * const.sigma_sb.value * T[:, 0]**4 - conduction_to_subsurface)
     
-    
-    
     T_new[:, 0] = T[:, 0] + dT_surf
     
-
-
     return T_new
 
 
-
-def calculate_temperatures_whole_orbit(temperatures, layer_temperatures, insolation, visible_facets_list, 
-                        view_factors_list, const1, const2, const3, self_heating_const,
-                        timesteps_per_orbit, n_layers, include_self_heating):
-
+def update_thermal_state_thickness(thermal_data, current_insolation, simulation):
     '''
-    treba da upisa u  prvu vrednost temperaturu svih celija i da izracuna novu vrednos. Onda tu vrednost da upise kao prethodnu temeperaturu za
-    sledeci vremenski korak
-    
-    Ovo je suprotno od prethodne funkcije koje sluzi za konvergenciju koja za sve trenutke ima prethodnu temperaturu pa ih racuna ponovo za sledecu rotaciju
-    
-    potrebno je i promeniti velicinu niza temeratures
-    
+    thermal_data.layer_temperatures: (n_facets, n_layers) - trenutne temperature
+    current_insolation: (n_facets) - fluks za ovaj specifični trenutak na orbiti
     '''
-    
-    n_facets = temperatures.shape[0]
-    current_column = 0  # Use column 0 for current timestep
-    prev_column = 1    # Use column 1 for previous timestep
-    
-    for time_step in range(timesteps_per_orbit):
-        # Swap columns for next iteration
-        current_column, prev_column = prev_column, current_column # NAJVEROVATNIJE OVDE TREBA DA SE INTERVENISE
-        
-        for i in range(n_facets):
-            # Surface temperature calculation
-            prev_temp = layer_temperatures[i, prev_column, 0]
-            prev_temp_layer1 = layer_temperatures[i, prev_column, 1]
-            
-            insolation_term = insolation[i, time_step] * const1
-            re_emitted_radiation_term = -const2 * (prev_temp**4)
-            
-            secondary_radiation_term = 0.0
-            if include_self_heating:
-                secondary_radiation_term = calculate_secondary_radiation(
-                    layer_temperatures[:, prev_column, 0], 
-                    visible_facets_list[i], 
-                    view_factors_list[i], 
-                    self_heating_const
-                )
-            
-            conducted_heat_term = const3 * (prev_temp_layer1 - prev_temp)
-            
-            new_temp = (prev_temp + 
-                    insolation_term + 
-                    re_emitted_radiation_term + 
-                    conducted_heat_term + 
-                    secondary_radiation_term)
+    T = thermal_data.layer_temperatures
+    T_new = np.copy(T)
 
-            temperatures[i, time_step] = new_temp
-            layer_temperatures[i, current_column, 0] = new_temp
-            
-            # Update subsurface temperatures
-            for layer in range(1, n_layers - 1):
-                prev_layer = layer_temperatures[i, prev_column, layer]
-                prev_layer_plus = layer_temperatures[i, prev_column, layer + 1]
-                prev_layer_minus = layer_temperatures[i, prev_column, layer - 1]
+    dz = simulation.layer_thickness
 
-                layer_temperatures[i, current_column, layer] = (
-                    prev_layer + 
-                    const3 * (prev_layer_plus - 
-                            2 * prev_layer + 
-                            prev_layer_minus)
-                )
-                    
-    return temperatures
+    coeff = simulation.thermal_diffusivity * simulation.delta_t / (np.min(dz)**2)
+    
+    if coeff > 0.5:
+        print("Upozorenje: Model je numerički nestabilan.")
+
+    # rastojanja između centara slojeva
+    dz_center_up = (dz[1:-1] + dz[2:]) / 2
+    dz_center_down = (dz[:-2] + dz[1:-1]) / 2
+
+    # temperaturni gradijenti
+    grad_up = (T[:, 2:] - T[:, 1:-1]) / dz_center_up
+    grad_down = (T[:, 1:-1] - T[:, :-2]) / dz_center_down
+
+    # divergencija fluksa
+    laplacian = (grad_up - grad_down) / dz[1:-1]
+
+    T_new[:, 1:-1] = T[:, 1:-1] + simulation.thermal_diffusivity * simulation.delta_t * laplacian
+
+    # donja granica (adiabatska)
+    T_new[:, -1] = T_new[:, -2]
+
+    # provodjenje sa površine u podzemlje (centar-centar)
+    dz_surface = (dz[0] + dz[1]) / 2
+    conduction_to_subsurface = simulation.thermal_conductivity * (T[:, 0] - T[:, 1]) / dz_surface
+
+    # energetski bilans površinskog sloja
+    dT_surf = (simulation.delta_t / (simulation.density * simulation.specific_heat_capacity * dz[0])) * (
+        current_insolation
+        - simulation.emissivity * const.sigma_sb.value * T[:, 0]**4
+        - conduction_to_subsurface
+    )
+
+    T_new[:, 0] = T[:, 0] + dT_surf
+
+    thermal_data.layer_temperatures = T_new
+
+
 
 
     
@@ -207,11 +182,11 @@ def calculate_yarkovsky(simulation, normals, areas, asteroid_mass, r_rad, r_tran
     R = np.dot(F, r_rad)
 
     
-#    dadt = 2 * simulation.mean_motion * (simulation.a_au * const.au.value)**2 / const.GM_sun.value * (
-#                    R * simulation.a_au * const.au.value * simulation.ecc * np.sin(true_anomaly) / np.sqrt(1-simulation.ecc**2) + 
-#                    B * simulation.a_au**2 * const.au.value * np.sqrt(1-simulation.ecc**2) / sun_distance)/asteroid_mass
+    dadt = 2 * simulation.mean_motion * (simulation.a_au * const.au.value)**2 / const.GM_sun.value * (
+                   R * simulation.a_au * const.au.value * simulation.ecc * np.sin(true_anomaly) / np.sqrt(1-simulation.ecc**2) + 
+                   B * simulation.a_au**2 * const.au.value * np.sqrt(1-simulation.ecc**2) / sun_distance)/asteroid_mass
             
-    dadt = 2 * simulation.a_au / simulation.mean_motion / sun_distance * np.sqrt(1 - simulation.ecc**2) * B / asteroid_mass
+    # dadt = 2 * simulation.a_au / simulation.mean_motion / sun_distance * np.sqrt(1 - simulation.ecc**2) * B / asteroid_mass
             
   
     return dadt
@@ -382,14 +357,7 @@ class YarkovskySolver(TemperatureSolver):
         
         
 # 
-#        surface_history = np.zeros([len(areas), np.sum(timesteps_per_orbit_section)])
-#        
-#        mean_T = np.zeros(np.sum(timesteps_per_orbit_section))
-#        mean_insolation = np.zeros(np.sum(timesteps_per_orbit_section))
-#        drift = np.zeros(np.sum(timesteps_per_orbit_section))
-#        
-#        true_anomaly_orbit = np.zeros(np.sum(timesteps_per_orbit_section))
-#        r_sun = np.zeros(np.sum(timesteps_per_orbit_section))
+
 #        
         
         counter = 0
@@ -403,6 +371,14 @@ class YarkovskySolver(TemperatureSolver):
             timesteps_per_orbit_section = (np.ones(number_of_initial_sections) * np.ceil(simulation.timesteps_per_orbit/number_of_initial_sections * simulation.orbital_initialisation)).astype(int)
             timesteps_per_orbit_section[-1] = np.ceil(simulation.timesteps_per_orbit * simulation.orbital_initialisation) - sum(timesteps_per_orbit_section[:-1]) - 1
         
+            surface_history = np.zeros([len(areas), np.sum(timesteps_per_orbit_section)])
+    #        
+            mean_T = np.zeros(np.sum(timesteps_per_orbit_section))
+            mean_insolation = np.zeros(np.sum(timesteps_per_orbit_section))
+    #        drift = np.zeros(np.sum(timesteps_per_orbit_section))
+    #        
+            true_anomaly_orbit = np.zeros(np.sum(timesteps_per_orbit_section))
+            r_sun = np.zeros(np.sum(timesteps_per_orbit_section))
         
             for orbit_section in range(number_of_initial_sections):
                 
@@ -413,20 +389,20 @@ class YarkovskySolver(TemperatureSolver):
     
                     thermal_data.layer_temperatures = update_thermal_state(thermal_data, precomputed_insolation[:, t], simulation)
         
-    #                surface_temperatures = thermal_data.layer_temperatures[:, 0]
+                    surface_temperatures = thermal_data.layer_temperatures[:, 0]
     #                # Ovde možeš sačuvati površinsku temperaturu za ovaj trenutak ako ti treba za grafikon
-    #                surface_history[:, counter] = surface_temperatures
+                    surface_history[:, counter] = surface_temperatures
     #                
     #                drift[counter] = calculate_yarkovsky(simulation, normals, areas, asteroid_mass, 
     #                                               r_rad[t], r_trans[t], true_anomaly[t], 
     #                                               current_sun_distance[t], 
     #                                               surface_temperatures)
     #                
-    #                mean_T[counter] = np.mean(surface_history[:, counter])
-    #                mean_insolation[counter] = np.mean(precomputed_insolation[:, t])
-    #                
-    #                true_anomaly_orbit[counter] = true_anomaly[t]
-    #                r_sun[counter] = current_sun_distance[t]
+                    mean_T[counter] = np.mean(surface_history[:, counter])
+                    mean_insolation[counter] = np.mean(precomputed_insolation[:, t])
+                    
+                    true_anomaly_orbit[counter] = true_anomaly[t]
+                    r_sun[counter] = current_sun_distance[t]
                     
                     # if np.mod(counter, 1000) == 0:
                     #     print(f'step {counter} out of {simulation.timesteps_per_orbit}, section: {orbit_section}')
@@ -443,24 +419,24 @@ class YarkovskySolver(TemperatureSolver):
                     
                     counter += 1
 
-
-#        plt.figure()
-#        plt.plot(np.arange(np.sum(timesteps_per_orbit_section))*simulation.delta_t/3600, mean_insolation)
-#        plt.title('INSOLATION (initialisation)')
-#        plt.grid()
-#        plt.show()
-#        
-#        plt.figure()
-#        plt.plot(np.arange(np.sum(timesteps_per_orbit_section))*simulation.delta_t/3600, mean_T)
-#        plt.title('MEAN T (initialisation)')
-#        plt.grid()
-#        plt.show()
-#        
-#        plt.figure()
-#        plt.plot(np.arange(np.sum(timesteps_per_orbit_section))*simulation.delta_t/3600, true_anomaly_orbit)
-#        plt.title('true anomaly (initialisation)')
-#        plt.grid()
-#        plt.show()
+        
+        plt.figure()
+        plt.plot(np.arange(np.sum(timesteps_per_orbit_section))*simulation.delta_t/3600, mean_insolation)
+        plt.title('INSOLATION (initialisation)')
+        plt.grid()
+        plt.show()
+        
+        plt.figure()
+        plt.plot(np.arange(np.sum(timesteps_per_orbit_section))*simulation.delta_t/3600, mean_T)
+        plt.title('MEAN T (initialisation)')
+        plt.grid()
+        plt.show()
+        
+        plt.figure()
+        plt.plot(np.arange(np.sum(timesteps_per_orbit_section))*simulation.delta_t/3600, true_anomaly_orbit)
+        plt.title('true anomaly (initialisation)')
+        plt.grid()
+        plt.show()
         
         
         

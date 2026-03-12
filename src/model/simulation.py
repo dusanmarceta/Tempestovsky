@@ -3,6 +3,8 @@
 import numpy as np
 from src.utilities.locations import Locations
 import astropy.constants as const
+from scipy.optimize import fsolve
+
 
 class Simulation:
     def __init__(self, config):
@@ -22,25 +24,50 @@ class Simulation:
                 value = np.array(value)
             setattr(self, key, value)
         
-        
-    
+        # ADDED
+        self.mean_motion = np.sqrt(const.GM_sun.value / (self.a_au * const.au.value)**3)
+        self.orbital_period = 2*np.pi / self.mean_motion
+        # -----------------------------------------------------------------
         # Initialization calculations based on the loaded parameters
 #        self.solar_distance_m = self.solar_distance_au * 1.496e11  # Convert AU to meters
         self.rotation_period_s = self.rotation_period_hours * 3600  # Convert hours to seconds
         self.angular_velocity = (2 * np.pi) / self.rotation_period_s
         self.thermal_conductivity = (self.thermal_inertia**2 / (self.density * self.specific_heat_capacity))
-        self.skin_depth = (self.thermal_conductivity / (self.density * self.specific_heat_capacity * self.angular_velocity)) ** 0.5
+        skin_depth_diurnal = (self.thermal_conductivity / (self.density * self.specific_heat_capacity * self.angular_velocity)) ** 0.5
+        skin_depth_seasonal = (self.thermal_conductivity / (self.density * self.specific_heat_capacity * self.mean_motion)) ** 0.5
+        
+        if self.yarkovsky_component == 'seasonal':
+            
+            self.skin_depth = skin_depth_seasonal
+            
+            total_thickness = self.n_skin_depths * self.skin_depth
+            self.first_layer_thickness = self.thicknes_0 * self.skin_depth
+          
+        elif self.yarkovsky_component == 'diurnal':
+            
+            self.skin_depth = skin_depth_diurnal
+            
+            total_thickness = self.n_skin_depths * self.skin_depth
+            self.first_layer_thickness = self.thicknes_0 * self.skin_depth
+            
+        elif self.yarkovsky_component == 'general':
+            
+            self.skin_depth = np.min([skin_depth_diurnal, skin_depth_seasonal])
+            
+            total_thickness = self.n_skin_depths * np.max([self.skin_depth_seasonal, self.skin_depth_diurnal])
+            self.first_layer_thickness = self.thicknes_0 * self.skin_depthl
+            
+        
+        self.dz, self.dz_center_up, self.dz_center_down = self.calculate_layer_thicknesses(total_thickness, self.first_layer_thickness, self.n_layers)
         
         
         
-        self.layer_thickness = self.n_skin_depths * self.skin_depth / self.n_layers
+        
         self.thermal_diffusivity = self.thermal_conductivity / (self.density * self.specific_heat_capacity)
         self.timesteps_per_day = self.calculate_adaptive_timesteps() # Adaptive timestep for low thermal inertia stability
         self.delta_t = self.rotation_period_s / self.timesteps_per_day
  
-        # ADDED
-        self.mean_motion = np.sqrt(const.GM_sun.value / (self.a_au * const.au.value)**3)
-        self.orbital_period = 2*np.pi / self.mean_motion
+        
         self.timesteps_per_orbit = int(np.ceil(self.orbital_period / self.delta_t))
         
 
@@ -67,19 +94,19 @@ class Simulation:
         values, ensuring stability for low thermal inertia materials.
         """
         # Original CFL calculation
-        cfl_denominator = self.layer_thickness**2 / (2 * self.thermal_diffusivity)
+        cfl_denominator = self.first_layer_thickness**2 / (2 * self.thermal_diffusivity)
         timesteps_cfl = int(round(self.rotation_period_s / cfl_denominator))
         delta_t_cfl = self.rotation_period_s / timesteps_cfl
         
         # Calculate insolation coefficient with CFL timestep
-        const1_cfl = delta_t_cfl / (self.layer_thickness * self.density * self.specific_heat_capacity)
+        const1_cfl = delta_t_cfl / (self.first_layer_thickness * self.density * self.specific_heat_capacity)
         
         # Adaptive constraint: limit const1 for stability
         max_const1 = 0.1  # Maximum allowed insolation coefficient
         
         if const1_cfl > max_const1:
             # Calculate timestep that keeps const1 reasonable
-            required_delta_t = max_const1 * self.layer_thickness * self.density * self.specific_heat_capacity
+            required_delta_t = max_const1 * self.first_layer_thickness * self.density * self.specific_heat_capacity
             adaptive_timesteps = int(np.ceil(self.rotation_period_s / required_delta_t))
             
             # Apply additional safety factor for very low thermal inertia
@@ -90,6 +117,46 @@ class Simulation:
             return adaptive_timesteps
         else:
             return timesteps_cfl
+        
+        
+    def calculate_layer_thicknesses(D, x1, N):
+    
+        if D/x1 < N: # if the first section is to large so that other must be decreased to reach N sections
+            # we set equidistant division so that the section size is smaller than the required first section x1
+            
+            N = int(np.ceil(D/x1)) + 1 
+            
+            layer_depths = np.linspace(0, D, N)
+        
+        else:
+            # Funkcija koja vraća grešku za dati r
+            def error(r):
+                return x1 * (r**N - 1) / (r - 1) - D
+        
+            # Početna procena za r
+            initial_guess = 1.1
+            
+            # Izračunaj r pomoću fsolve (Newton-Raphson metoda)
+            r_solution = fsolve(error, initial_guess)[0]
+            
+            
+            
+            # Generiši korake koristeći izračunat r
+            steps = x1 * r_solution ** np.arange(N)
+            
+            # Podesi korake tako da njihov zbir bude tačno D
+            steps *= D / np.sum(steps)
+        
+            # Kreiraj tačke podele
+            layer_depths = np.concatenate(([0], np.cumsum(steps)))
+            
+            dz = np.diff(layer_depths)
+            
+            dz_center_up = (dz[1:-1] + dz[2:]) / 2
+            dz_center_down = (dz[:-2] + dz[1:-1]) / 2
+            # layer_thicknesses = np.insert(layer_thicknesses, 0, layer_depths[0])
+        
+        return dz, dz_center_up, dz_center_down
         
         
     
