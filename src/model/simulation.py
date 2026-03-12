@@ -190,8 +190,7 @@ class ThermalData:
         """Set thermal view factors for all facets."""
         self.thermal_view_factors = [np.array(view_factor, dtype=np.float64) for view_factor in view_factors]
         
-        
-        
+             
 class ThermalData_propagation:
     def __init__(self, n_facets, n_layers, calculate_energy_terms):
         # Surface temperatures for one day only
