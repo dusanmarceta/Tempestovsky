@@ -28,8 +28,7 @@ def calculate_temperatures(temperatures, layer_temperatures, insolation, visible
     n_facets = temperatures.shape[0]
     current_column = 0  # Use column 0 for current timestep
     prev_column = 1    # Use column 1 for previous timestep
-    
-    print('GRESKA')
+
     for time_step in range(timesteps_per_day):
         # Swap columns for next iteration
         current_column, prev_column = prev_column, current_column
@@ -42,8 +41,6 @@ def calculate_temperatures(temperatures, layer_temperatures, insolation, visible
             prev_temp = layer_temperatures[i, prev_column, 0]
             prev_temp_layer1 = layer_temperatures[i, prev_column, 1]
             
-            
-            print(prev_temp, prev_temp_layer1)
             insolation_term = insolation[i, time_step] * const1
             re_emitted_radiation_term = -const2 * (prev_temp**4)
             
@@ -358,7 +355,7 @@ class YarkovskySolver(TemperatureSolver):
         print('**********************************************')
         
         
-        number_of_orbit_sections = 100
+        number_of_orbit_sections = 500
         
         
         
@@ -374,15 +371,16 @@ class YarkovskySolver(TemperatureSolver):
             number_of_rotations = np.floor(simulation.orbital_period * simulation.orbital_initialisation/simulation.rotation_period_s)
             simulation.orbital_initialisation = number_of_rotations * simulation.rotation_period_s / simulation.orbital_period
             number_of_initial_sections = int(np.ceil(number_of_orbit_sections * simulation.orbital_initialisation))
-            timesteps_per_orbit_section = (np.ones(number_of_initial_sections) * np.ceil(simulation.timesteps_per_orbit/number_of_initial_sections * simulation.orbital_initialisation)).astype(int)
+            timesteps_per_orbit_section = (np.ones(number_of_initial_sections) * np.floor(simulation.timesteps_per_orbit/number_of_initial_sections * simulation.orbital_initialisation)).astype(int)
             timesteps_per_orbit_section[-1] = np.ceil(simulation.timesteps_per_orbit * simulation.orbital_initialisation) - sum(timesteps_per_orbit_section[:-1]) - 1
         
+        
+            
             surface_history = np.zeros([len(areas), np.sum(timesteps_per_orbit_section)])
-    #        
+            
+
             mean_T = np.zeros(np.sum(timesteps_per_orbit_section))
             mean_insolation = np.zeros(np.sum(timesteps_per_orbit_section))
-    #        drift = np.zeros(np.sum(timesteps_per_orbit_section))
-    #        
             true_anomaly_orbit = np.zeros(np.sum(timesteps_per_orbit_section))
             r_sun = np.zeros(np.sum(timesteps_per_orbit_section))
         
@@ -397,31 +395,31 @@ class YarkovskySolver(TemperatureSolver):
         
                     surface_temperatures = thermal_data.layer_temperatures[:, 0]
     #                # Ovde možeš sačuvati površinsku temperaturu za ovaj trenutak ako ti treba za grafikon
-                    surface_history[:, counter] = surface_temperatures
-    #                
-    #                drift[counter] = calculate_yarkovsky(simulation, normals, areas, asteroid_mass, 
-    #                                               r_rad[t], r_trans[t], true_anomaly[t], 
-    #                                               current_sun_distance[t], 
-    #                                               surface_temperatures)
-    #                
+                    try:
+                        surface_history[:, counter] = surface_temperatures
+                    except IndexError as e:
+                        print("Uhvaćen IndexError na liniji surface_history[:, counter] = surface_temperatures")
+                        print(f"counter = {counter}")
+                        print(f"orbit section = {orbit_section}")
+                        print(f"surface_history.shape = {surface_history.shape}")
+                        print(f"ukupno bi trebalo da ima = {np.sum(timesteps_per_orbit_section)}")
+                        print(f"ukupno bi trebalo da ima do ovog = {np.sum(timesteps_per_orbit_section[:orbit_section])}")
+                        print(f"u prvom ima = {timesteps_per_orbit_section[0]}")
+                        print(f"u sadasnjem ima = {timesteps_per_orbit_section[orbit_section]}")
+                        print(f"u poslednjem ima = {timesteps_per_orbit_section[-1]}")
+                        
+                        print(f"svi = {timesteps_per_orbit_section}")
+                        
+#                        if 'surface_temperatures' in locals():
+#                            print(f"surface_temperatures.shape = {surface_temperatures.shape}")
+#                            print(f"Prvih 10 vrednosti: {surface_temperatures[:10]}")
+#                        raise  # opet baci grešku da vidiš traceback
+       
                     mean_T[counter] = np.mean(surface_history[:, counter])
                     mean_insolation[counter] = np.mean(precomputed_insolation[:, t])
                     
                     true_anomaly_orbit[counter] = true_anomaly[t]
                     r_sun[counter] = current_sun_distance[t]
-                    
-                    # if np.mod(counter, 1000) == 0:
-                    #     print(f'step {counter} out of {simulation.timesteps_per_orbit}, section: {orbit_section}')
-        
-                    
-            
-                    # angles_rad = np.rad2deg(np.arctan2(r_rad[:,1], r_rad[:,0]))
-                    # angles_trans = np.rad2deg(np.arctan2(r_trans[:,1], r_trans[:,0]))
-                    
-                    
-                    # vertikal_trans = np.rad2deg(np.arcsin(r_trans[:,2]))
-                    
-                    # vertikal_rad = np.rad2deg(np.arcsin(r_rad[:,2]))
                     
                     counter += 1
 
@@ -525,6 +523,8 @@ class YarkovskySolver(TemperatureSolver):
                 counter += 1
 
         print('poluprecnik', poluprecnik)
+        print('zapremina', volume)
+        print('povrsina', np.sum(areas))
         print('drift', np.mean(drift))
 
         plt.figure()
