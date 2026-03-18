@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-model href="https://pds.nasa.gov/pds4/pds/v1/PDS4_PDS_1N00.sch" schematypens="http://purl.oclc.org/dsdl/schematron"?>
+<Product_Document xmlns="http://pds.nasa.gov/pds4/pds/v1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://pds.nasa.gov/pds4/pds/v1 https://pds.nasa.gov/pds4/pds/v1/PDS4_PDS_1N00.xsd">
+  <Identification_Area> <logical_identifier>urn:nasa:pds:gbo.ast-apophis.jpl.radar.shape_model:document:instrument_and_telescope_information</logical_identifier>
+    <version_id>1.0</version_id>
+    <title>Instruments and Telescopes Used in the  Bundle.</title>
+    <information_model_version>1.23.0.0</information_model_version>
+    <product_class>Product_Document</product_class>
+    <Citation_Information>
+      <publication_year>2025</publication_year>
+      <description>Information on the instrument and telescope used in the Radar shape model of asteroid (99942) Apophis bundle.</description>
+    </Citation_Information>
+  </Identification_Area>
+  <Document>
+    <document_name>Document for the instruments and telescopes used in this bundle.</document_name>
+    <publication_date>2025-06-06</publication_date>
+    <Document_Edition>
+      <edition_name>Text edition</edition_name>
+      <language>English</language>
+      <files>1</files>
+      <Document_File>
+        <file_name>instrument_and_telescope_information.txt</file_name>
+        <document_standard_id>UTF-8 Text</document_standard_id>
+      </Document_File>
+    </Document_Edition>
+  </Document>
+</Product_Document>

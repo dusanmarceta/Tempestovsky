@@ -1,0 +1,42 @@
+<?xml-model href="https://pds.nasa.gov/pds4/pds/v1/PDS4_PDS_1N00.sch" schematypens="http://purl.oclc.org/dsdl/schematron"?>
+<Product_Document xmlns="http://pds.nasa.gov/pds4/pds/v1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://pds.nasa.gov/pds4/pds/v1 https://pds.nasa.gov/pds4/pds/v1/PDS4_PDS_1N00.xsd">
+  <Identification_Area>
+    <logical_identifier>urn:nasa:pds:gbo.ast-apophis.jpl.radar.shape_model:document:bundle_description</logical_identifier>
+    <version_id>1.0</version_id>
+    <title>Bundle description for the gbo.ast-apophis.jpl.radar.shape_model bundle</title>
+    <information_model_version>1.23.0.0</information_model_version>
+    <product_class>Product_Document</product_class>
+    <Citation_Information>
+      <publication_year>2025</publication_year>
+      <keyword>radar shape model</keyword> 
+      <description>This data set contains a preliminary three-dimensional shape model and spin state of near-Earth asteroid (99942) Apophis based on ground-based radar images as reported by Brozovic et al. (2018).  This shape model (apophis_v233s7) is Model B from Figure 6 (and Supplementary Figure 4C) in Brozovic et al. 2018.  The rotation state (apophis_v233s7_spin_state) is the same as Model R in the Supplementary Table 1 in Brozovic et al. 2018.</description>             
+      <List_Author>
+        <Person>
+          <given_name>Kenneth</given_name>
+          <family_name>Lawrence</family_name>
+          <person_orcid>0000-0002-9108-825X</person_orcid>      
+        </Person>
+        <Person>
+          <given_name>Lance</given_name>
+          <family_name>Benner</family_name>
+          <person_orcid>0000-0001-7164-9120</person_orcid>
+        </Person>
+      </List_Author>  
+    </Citation_Information>
+  </Identification_Area>
+  <Document>
+    <document_name>Bundle description for the asteroid (99942) Apophis shape model bundle</document_name>
+    <publication_date>2025-05-21</publication_date>
+    <description> A document describing the content and structure of the bundle.</description>
+    <Document_Edition>
+      <edition_name>Text edition</edition_name>
+      <language>English</language>
+      <files>1</files>
+      <description>A document describing the content and structure of the bundle.</description>
+      <Document_File>
+        <file_name>bundle_description.txt</file_name>
+        <document_standard_id>UTF-8 Text</document_standard_id>
+      </Document_File>
+    </Document_Edition>
+  </Document>
+</Product_Document>

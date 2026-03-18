@@ -1,0 +1,84 @@
+Instrument and Telescopes Used in the Radar shape model of asteroid (99942) Apophis Bundle
+============================================================================================
+
+Date: 2025-06-18
+The information was extracted from the sources cited below.
+
+
+Arecibo Planetary Radar Transmitter
+===================================
+
+The Arecibo Planetary Radar Transmitter transmitted 1 MW continuous output power at 2380 MHz with a 27 MHz bandwidth (1 dB). When transmitting through the Arecibo Telescope, the peak Effective Isotropic Radiated Power (EIRP) was approximately 20 TW. It could be phase, frequency, and amplitude modulated. Between 1974 and 1997 the peak output power was 450 kW, or 7 TW EIRP.  Before 1997, the telescope gain, and thus EIRP, depended significantly on telescope pointing, as the illuminated area of the reflector was reduced at zenith angles above 10 degrees.
+
+Arecibo 2380 MHz Radar Receiver
+===============================
+
+The Arecibo Planetary Radar Receiver is a single-pixel cryogenically-cooled High Electron Mobility Transistor (HEMT) amplifier mounted on the Arecibo 305-m telescope. It has a filter bandpass of approximately 100 MHz centered at 2380 MHz to best match the bandpass of the Arecibo Planetary Radar Transmitter. Earlier implementations of the Arecibo Planetary Radar Receiver had similar properties but somewhat varying performance.
+
+
+Arecibo Observatory 305-m fixed spherical reflecting antenna
+============================================================
+
+Telescope Name: William E. Gordon Telescope
+Latitude (deg):    18.344219  /* +18 20 39.19 */  
+Longitude (deg):  293.247306  /* 293 14 50.3  */
+Elevation (m):    453.34 
+Coordinate source: GRS80 datum
+
+Arecibo's 305-m fixed spherical reflecting radio antenna was the primary telescope at Arecibo Observatory between 1963 and 2020, when it was irreparably damaged by a series of failures in its supporting cables.  Because the surface was spherical, the antenna used 'line' feeds, each connected to receivers in 'carriage houses' supported above the reflector by towers and cables. In the late 1990s one of the carriage houses was replaced with reflecting optics that corrected the spherical aberration over a wide bandwidth, reduced receiver noise by a factor of several, and made gain less dependent on pointing.  The antenna was 'pointed' over angles of approximately 0-20 degrees from zenith by moving the carriage houses. Initially the antenna was used for radio astronomy above 50 MHz and solar system radar astronomy (including active probing of Earth's upper atmosphere) at 430 MHz. In the mid-1970s, the reflecting surface was improved and new receivers and transmitters were added, allowing radio observations to 11 GHz and radar operation at 2380 MHz.
+
+The position of the telescope was determined through surveying and comparison to stations determined using the Global Positioning System. The accuracy of position is approximately 1 m.
+
+Derived position in other coordinate systems: International Terrestrial Reference Frame 2000 (ITRF2000)
+
+Geocentric Longitude:   -66 45 09.70
+Geocentric Latitude:    +18 13 46.45
+
+Astronomical Longitude: -66 45 08.00
+Astronomical Latitude:  +18 21 13.07
+
+Elevation (above geoid):    496.84 m
+
+Geocentric X:           2390487.55 m
+Geocentric Y:          -5564731.65 m
+Geocentric Z:           1994725.93 m
+
+
+DSS-14 X-band Goldstone Solar System Radar Transmitter
+======================================================
+
+The Goldstone Solar System Radar (GSSR) transmits 450 kW and can range-code the transmitted signal at up to 40 MHz bandwidth for a range resolution of 25 ns or 3.75 m. The transmit frequency is 8560 MHz (3.5 cm). The GSSR transmitter can also be phase, frequency, and amplitude modulated. GSSR is fully steerable and can view the entire sky north of declination = -35 degrees. Until 2010, X-band transmissions could be modulated at 8 MHz for 18.75 meter resolution.
+
+
+DSS-14 X-band Goldstone Solar System Radar Receiver
+====================================================
+
+The Goldstone Solar System Radar receiver is a cryogenically-cooled dual-channel HEMT low noise amplifier for receiving X-band radio signals at 8560 MHz or 3.5 cm wavelength.
+
+
+Goldstone DSS-14 70-m Radio Telescope
+=====================================
+
+Longitude (deg)    243.110462
+Latitude (deg)      35.425901
+Altitude (m)      1001.390
+Coordinate source:  WGS 84 Ellipsoid
+
+This fully steerable telescope is a parabolic radio/radar antenna that is part of the NASA Deep Space Network (DSN). DSS-14 was first operational in 1964 with a 64-m aperture, supporting the Mariner 4 flyby of Mars; as a result, it was subsequently known as "Mars Station". Its aperture was extended to 70-m in 1988 to support the Voyager 2 encounter with Neptune. The antenna can receive at frequencies between about 1.6 and 8.6 GHz in left-circular polarization (LCP); over 2.0-8.6 GHz it can receive simultaneously in both LCP and right-circular polarization (RCP). It can transmit up to 20 kW at selected frequencies in the 2-8 GHz range. DSS-14 is used occasionally as part of the Goldstone Solar System Radar, which has more powerful transmitters. 
+
+
+Sources:
+========
+
+Arecibo telescope and instruments:
+Information was provided by Dr. Michael Nolan based on Arecibo internal documents.
+
+Goldstone DSS-14 70-m Radio Telescope;
+https://www.gdscc.nasa.gov
+An overview of the Goldstone Deep Space Communication Complex with photographs. Pull down the menu tab at the bottom of the page for more information on DSS-14.
+
+Goldstone Instruments:
+Ostro, S. J. Planetary radar astronomy. Reviews of Modern Physics, 65, 1235-1279 1993. doi: 10.1103/RevModPhys.65.1235
+
+
+

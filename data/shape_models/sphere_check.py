@@ -1,29 +1,46 @@
 import numpy as np
 from stl import mesh
 
-sphere = mesh.Mesh.from_file('500m_ico_sphere_80_facets.stl')
+# učitaj STL
+mesh_file = mesh.Mesh.from_file('didymos_80_facets.stl')
 
-# sva temena
-vertices = sphere.vectors.reshape(-1, 3)
+# temena svih trouglova
+v0 = mesh_file.vectors[:,0]
+v1 = mesh_file.vectors[:,1]
+v2 = mesh_file.vectors[:,2]
 
-# centar sfere (ako nije tačno u (0,0,0))
-center = vertices.mean(axis=0)
+# centri faceta
+positions = (v0 + v1 + v2) / 3.0  # shape (N,3)
 
-# rastojanja od centra
-r = np.linalg.norm(vertices - center, axis=1)
+# normalne
+normals = mesh_file.normals.copy()  # shape (N,3)
 
-# radijus (srednja vrednost)
-radius = r.mean()
+# površina svakog trougla
+areas = 0.5 * np.linalg.norm(np.cross(v1 - v0, v2 - v0), axis=1)
 
-print(radius)
+# centar mesh-a
+center = positions.mean(axis=0)
+positions_centered = positions - center
+
+# normalizacija normala
+normals_normalized = normals / np.linalg.norm(normals, axis=1)[:, np.newaxis]
+
+# okreni normale koje gledaju unutra
+dot_products = np.einsum('ij,ij->i', normals_normalized, positions_centered)
+normals_corrected = normals_normalized.copy()
+normals_corrected[dot_products < 0] *= -1
+
+# formula za zapreminu
+volume = (1.0 / 3.0) * np.sum(
+    areas * np.einsum('ij,ij->i', positions_centered, normals_corrected)
+)
+
+print("Zapremina iz formule:", abs(volume))
 
 
+volume_original, cog, inertia = mesh_file.get_mass_properties()
 
+print("Njihova zapremina", volume_original)
 
+r = (3*volume / 4 / np.pi)**(1/3)
 
-volume, cog, inertia = sphere.get_mass_properties()
-
-radijus1 = (3*volume / 4 / np.pi)**(1/3)
-
-print(volume)
-print(radijus1)

@@ -1,0 +1,239 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-model href="https://pds.nasa.gov/pds4/pds/v1/PDS4_PDS_1N00.sch" schematypens="http://purl.oclc.org/dsdl/schematron"?>
+<Product_Collection xmlns="http://pds.nasa.gov/pds4/pds/v1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://pds.nasa.gov/pds4/pds/v1 https://pds.nasa.gov/pds4/pds/v1/PDS4_PDS_1N00.xsd">
+  <Identification_Area>
+    <logical_identifier>urn:nasa:pds:gbo.ast-apophis.jpl.radar.shape_model:data</logical_identifier>
+    <version_id>1.0</version_id>
+    <title>Data Collection for the Radar shape model of asteroid (99942) Apophis bundle</title>
+    <information_model_version>1.23.0.0</information_model_version>
+    <product_class>Product_Collection</product_class>
+    <Citation_Information>
+      <publication_year>2026</publication_year>
+      <description>The near-Earth asteroid (99942) Apophis spin state at epoch December 23 2012, 14:14:00 UTC with zero-epoch time and rotational phase as stated by Brozovic et al. (2018).  The rotation state is the same as Model R in the Supplementary Table 1 in Brozovic et al. 2018.</description>
+      <List_Author>
+        <Person>
+          <given_name>Marina</given_name>
+          <family_name>Brozovic</family_name>
+          <person_orcid>0009-0007-3493-2139</person_orcid>
+        </Person>
+        <Person>
+          <given_name>Lance</given_name>
+          <family_name>Benner</family_name>
+          <person_orcid>0000-0001-7164-9120</person_orcid>
+        </Person>
+        <Person>
+          <given_name>Joseph</given_name>
+          <family_name>McMichael</family_name>
+        </Person>
+        <Person>
+          <given_name>Jon</given_name>
+          <family_name>Giorgini</family_name>
+          <person_orcid>0000-0002-7062-0091</person_orcid>
+        </Person>
+        <Person>
+          <given_name>Petr</given_name>
+          <family_name>Pravec</family_name>
+          <person_orcid>0000-0001-8434-9776</person_orcid>
+        </Person>
+        <Person>
+          <given_name>Petr</given_name>
+          <family_name>Scheirich</family_name>
+          <person_orcid>0000-0001-8518-9532</person_orcid>
+        </Person>
+        <Person>
+          <given_name>Christopher</given_name>
+          <family_name>Magri</family_name>
+          <person_orcid>0000-0002-2200-4622</person_orcid>
+        </Person>
+        <Person>
+          <given_name>Michael</given_name>
+          <family_name>Busch</family_name>
+          <person_orcid>0000-0003-2474-7523</person_orcid>
+        </Person>
+        <Person>
+          <given_name>Joseph</given_name>
+          <family_name>Jao</family_name>
+        </Person>
+        <Person>
+          <given_name>Clement</given_name>
+          <family_name>Lee</family_name>
+        </Person>
+        <Person>
+          <given_name>Lawrence</given_name>
+          <family_name>Snedeker</family_name>
+        </Person>
+        <Person>
+          <given_name>Marc</given_name>
+          <family_name>Silva</family_name>
+        </Person>
+        <Person>
+          <given_name>Martin</given_name>
+          <family_name>Slade</family_name>
+          <person_orcid>0000-0003-1720-3421</person_orcid>
+        </Person>
+        <Person>
+          <given_name>Boris</given_name>
+          <family_name>Semenov</family_name>
+        </Person>
+        <Person>
+          <given_name>Michael</given_name>
+          <family_name>Nolan</family_name>
+          <person_orcid>0000-0001-8316-0680</person_orcid>
+        </Person>
+        <Person>
+          <given_name>Patrick</given_name>
+          <family_name>Taylor</family_name>
+          <person_orcid>0000-0002-2493-943X</person_orcid>
+        </Person>
+        <Person>
+          <given_name>Ellen</given_name>
+          <family_name>Howell</family_name>
+          <person_orcid>0000-0002-7683-5843</person_orcid>
+        </Person>
+        <Person>
+          <given_name>Kenneth</given_name>
+          <family_name>Lawrence</family_name>
+          <person_orcid>0000-0002-9108-825X</person_orcid>
+        </Person>
+      </List_Author>  
+    </Citation_Information>
+  </Identification_Area>
+  <Context_Area>
+    <Time_Coordinates>
+      <start_date_time>2012-12-21Z</start_date_time>
+      <stop_date_time>2013-03-16Z</stop_date_time>
+    </Time_Coordinates>
+    <Primary_Result_Summary>
+      <purpose>Science</purpose>
+      <processing_level>Derived</processing_level>
+      <Science_Facets>
+        <wavelength_range>Radio</wavelength_range>
+        <discipline_name>Small Bodies</discipline_name>
+        <facet1>Shape Model</facet1>
+      </Science_Facets>
+    </Primary_Result_Summary>
+    <Investigation_Area>
+      <name>No Specific Investigation</name>
+      <type>Individual Investigation</type>
+      <Internal_Reference>
+        <lid_reference>urn:nasa:pds:context:investigation:individual.none</lid_reference>
+        <reference_type>collection_to_investigation</reference_type>
+      </Internal_Reference>
+    </Investigation_Area>
+    <Observing_System>
+      <name>Monostatic Arecibo Radar</name>
+      <Observing_System_Component>
+        <name>Arecibo Observatory</name>
+        <type>Host</type>
+        <Internal_Reference>
+          <lid_reference>urn:nasa:pds:context:facility:observatory.arecibo</lid_reference>
+          <reference_type>is_facility</reference_type>
+        </Internal_Reference>
+      </Observing_System_Component>
+      <Observing_System_Component>
+        <name>305-m fixed spherical reflecting antenna</name>
+        <type>Telescope</type>
+        <Internal_Reference>
+          <lid_reference>urn:nasa:pds:context:telescope:arecibo.305m</lid_reference>
+          <reference_type>is_telescope</reference_type>
+        </Internal_Reference>
+      </Observing_System_Component>
+      <Observing_System_Component>
+        <name>Arecibo Planetary Radar Transmitter</name>
+        <type>Instrument</type>
+        <Internal_Reference>
+          <lid_reference>urn:nasa:pds:context:instrument:arecibo.305m.trans_s</lid_reference>
+          <reference_type>is_instrument</reference_type>
+        </Internal_Reference>
+      </Observing_System_Component>
+      <Observing_System_Component>
+        <name>Arecibo 2380 MHz Radar Receiver</name>
+        <type>Instrument</type>
+        <Internal_Reference>
+          <lid_reference>urn:nasa:pds:context:instrument:arecibo.305m.recv_s</lid_reference>
+          <reference_type>is_instrument</reference_type>
+        </Internal_Reference>
+      </Observing_System_Component>
+    </Observing_System>
+    <Observing_System>
+      <name>Goldstone Solar System Radar</name>
+      <Observing_System_Component>
+        <name>Goldstone Deep Space Communications Complex</name>
+        <type>Host</type>
+        <Internal_Reference>
+          <lid_reference>urn:nasa:pds:context:facility:observatory.goldstone</lid_reference>
+          <reference_type>is_facility</reference_type>
+        </Internal_Reference>
+      </Observing_System_Component>
+      <Observing_System_Component>
+        <name>DSS-14 70-m Radio Telescope</name>
+        <type>Telescope</type>
+        <description>Transmit Station</description>
+        <Internal_Reference>
+          <lid_reference>urn:nasa:pds:context:telescope:goldstone.dss14_70m</lid_reference>
+          <reference_type>is_telescope</reference_type>
+        </Internal_Reference>
+      </Observing_System_Component>
+      <Observing_System_Component>
+        <name>DSS-14 X-band Goldstone Solar System Radar Transmitter</name>
+        <type>Instrument</type>
+        <description>2-250kW klystrons</description>
+        <Internal_Reference>
+          <lid_reference>urn:nasa:pds:context:instrument:goldstone.dss14_70m.trans_x</lid_reference>
+          <reference_type>is_instrument</reference_type>
+        </Internal_Reference>
+      </Observing_System_Component>  
+      <Observing_System_Component>
+        <name>DSS-14 X-band Goldstone Solar System Radar Receiver</name>
+        <type>Instrument</type>
+        <description>GSSR X-band HEMT LNA</description>
+        <Internal_Reference>
+          <lid_reference>urn:nasa:pds:context:instrument:goldstone.dss14_70m.recv_x</lid_reference>
+          <reference_type>is_instrument</reference_type>
+        </Internal_Reference>
+      </Observing_System_Component>
+    </Observing_System>        
+    <Target_Identification>
+      <name>(99942) Apophis</name>
+      <type>Asteroid</type>
+      <Internal_Reference>
+        <lid_reference>urn:nasa:pds:context:target:asteroid.99942_apophis</lid_reference>
+        <reference_type>collection_to_target</reference_type>
+      </Internal_Reference>
+    </Target_Identification>
+  </Context_Area>
+  <Collection>
+    <collection_type>Data</collection_type>
+  </Collection>
+  <File_Area_Inventory>
+    <File>
+      <file_name>collection_gbo.ast-apophis.jpl.radar.shape_model_data_inventory.csv</file_name>
+      <local_identifier>data</local_identifier>
+      <records>2</records>
+    </File>
+    <Inventory>
+      <offset unit="byte">0</offset>
+      <parsing_standard_id>PDS DSV 1</parsing_standard_id>
+      <records>2</records>
+      <record_delimiter>Carriage-Return Line-Feed</record_delimiter>
+      <field_delimiter>Comma</field_delimiter>
+      <Record_Delimited>
+        <fields>2</fields>
+        <groups>0</groups>
+        <Field_Delimited>
+          <name>Member Status</name>
+          <field_number>1</field_number>
+          <data_type>ASCII_String</data_type>
+          <maximum_field_length unit="byte">1</maximum_field_length>
+        </Field_Delimited>
+        <Field_Delimited>
+          <name>LIDVID_LID</name>
+          <field_number>2</field_number>
+          <data_type>ASCII_LIDVID_LID</data_type>
+          <maximum_field_length unit="byte">255</maximum_field_length>
+        </Field_Delimited>
+      </Record_Delimited>
+      <reference_type>inventory_has_member_product</reference_type>
+    </Inventory>
+  </File_Area_Inventory>
+</Product_Collection>

@@ -220,13 +220,13 @@ class YarkovskySolver(TemperatureSolver):
         asteroid_mass = volume * simulation.density
         
         
-
-        
-        # indeks najblizi ekvatoru
-        idx_equator = np.argmin(np.abs(normals[:,2]))
-
-        # indeks najblizi polu
-        idx_pole = np.argmax(np.abs(normals[:,2]))
+#
+#        
+#        # indeks najblizi ekvatoru
+#        idx_equator = np.argmin(np.abs(normals[:,2]))
+#
+#        # indeks najblizi polu
+#        idx_pole = np.argmax(np.abs(normals[:,2]))
 
         poluprecnik = (3 * volume /4 / np.pi)**0.33333333333
 
@@ -349,7 +349,8 @@ class YarkovskySolver(TemperatureSolver):
         print('**********************************************')
         print('**********************************************')
         print('**********************************************')
-        print('Diurnal Initialization finished')
+        print('Diurnal Initialization finished') 
+        print('delta t', simulation.delta_t)
         print('**********************************************')
         print('**********************************************')
         print('**********************************************')
@@ -376,13 +377,13 @@ class YarkovskySolver(TemperatureSolver):
         
         
             
-            surface_history = np.zeros([len(areas), np.sum(timesteps_per_orbit_section)])
-            
-
-            mean_T = np.zeros(np.sum(timesteps_per_orbit_section))
-            mean_insolation = np.zeros(np.sum(timesteps_per_orbit_section))
-            true_anomaly_orbit = np.zeros(np.sum(timesteps_per_orbit_section))
-            r_sun = np.zeros(np.sum(timesteps_per_orbit_section))
+#            surface_history = np.zeros([len(areas), np.sum(timesteps_per_orbit_section)])
+#            
+#
+#            mean_T = np.zeros(np.sum(timesteps_per_orbit_section))
+#            mean_insolation = np.zeros(np.sum(timesteps_per_orbit_section))
+#            true_anomaly_orbit = np.zeros(np.sum(timesteps_per_orbit_section))
+#            r_sun = np.zeros(np.sum(timesteps_per_orbit_section))
         
             for orbit_section in range(number_of_initial_sections):
                 
@@ -395,53 +396,53 @@ class YarkovskySolver(TemperatureSolver):
         
                     surface_temperatures = thermal_data.layer_temperatures[:, 0]
     #                # Ovde možeš sačuvati površinsku temperaturu za ovaj trenutak ako ti treba za grafikon
-                    try:
-                        surface_history[:, counter] = surface_temperatures
-                    except IndexError as e:
-                        print("Uhvaćen IndexError na liniji surface_history[:, counter] = surface_temperatures")
-                        print(f"counter = {counter}")
-                        print(f"orbit section = {orbit_section}")
-                        print(f"surface_history.shape = {surface_history.shape}")
-                        print(f"ukupno bi trebalo da ima = {np.sum(timesteps_per_orbit_section)}")
-                        print(f"ukupno bi trebalo da ima do ovog = {np.sum(timesteps_per_orbit_section[:orbit_section])}")
-                        print(f"u prvom ima = {timesteps_per_orbit_section[0]}")
-                        print(f"u sadasnjem ima = {timesteps_per_orbit_section[orbit_section]}")
-                        print(f"u poslednjem ima = {timesteps_per_orbit_section[-1]}")
-                        
-                        print(f"svi = {timesteps_per_orbit_section}")
+#                    try:
+#                        surface_history[:, counter] = surface_temperatures
+#                    except IndexError as e:
+#                        print("Uhvaćen IndexError na liniji surface_history[:, counter] = surface_temperatures")
+#                        print(f"counter = {counter}")
+#                        print(f"orbit section = {orbit_section}")
+#                        print(f"surface_history.shape = {surface_history.shape}")
+#                        print(f"ukupno bi trebalo da ima = {np.sum(timesteps_per_orbit_section)}")
+#                        print(f"ukupno bi trebalo da ima do ovog = {np.sum(timesteps_per_orbit_section[:orbit_section])}")
+#                        print(f"u prvom ima = {timesteps_per_orbit_section[0]}")
+#                        print(f"u sadasnjem ima = {timesteps_per_orbit_section[orbit_section]}")
+#                        print(f"u poslednjem ima = {timesteps_per_orbit_section[-1]}")
+#                        
+#                        print(f"svi = {timesteps_per_orbit_section}")
                         
 #                        if 'surface_temperatures' in locals():
 #                            print(f"surface_temperatures.shape = {surface_temperatures.shape}")
 #                            print(f"Prvih 10 vrednosti: {surface_temperatures[:10]}")
 #                        raise  # opet baci grešku da vidiš traceback
        
-                    mean_T[counter] = np.mean(surface_history[:, counter])
-                    mean_insolation[counter] = np.mean(precomputed_insolation[:, t])
+#                    mean_T[counter] = np.mean(surface_history[:, counter])
+#                    mean_insolation[counter] = np.mean(precomputed_insolation[:, t])
+#                    
+#                    true_anomaly_orbit[counter] = true_anomaly[t]
+#                    r_sun[counter] = current_sun_distance[t]
                     
-                    true_anomaly_orbit[counter] = true_anomaly[t]
-                    r_sun[counter] = current_sun_distance[t]
-                    
-                    counter += 1
+#                    counter += 1
 
         
-        plt.figure()
-        plt.plot(np.arange(np.sum(timesteps_per_orbit_section))*simulation.delta_t/3600, mean_insolation)
-        plt.title('INSOLATION (initialisation)')
-        plt.grid()
-        plt.show()
-        
-        plt.figure()
-        plt.plot(np.arange(np.sum(timesteps_per_orbit_section))*simulation.delta_t/3600, mean_T)
-        plt.title('MEAN T (initialisation)')
-        plt.grid()
-        plt.show()
-        
-        plt.figure()
-        plt.plot(np.arange(np.sum(timesteps_per_orbit_section))*simulation.delta_t/3600, true_anomaly_orbit)
-        plt.title('true anomaly (initialisation)')
-        plt.grid()
-        plt.show()
-        
+#        plt.figure()
+#        plt.plot(np.arange(np.sum(timesteps_per_orbit_section))*simulation.delta_t/3600, mean_insolation)
+#        plt.title('INSOLATION (initialisation)')
+#        plt.grid()
+#        plt.show()
+#        
+#        plt.figure()
+#        plt.plot(np.arange(np.sum(timesteps_per_orbit_section))*simulation.delta_t/3600, mean_T)
+#        plt.title('MEAN T (initialisation)')
+#        plt.grid()
+#        plt.show()
+#        
+#        plt.figure()
+#        plt.plot(np.arange(np.sum(timesteps_per_orbit_section))*simulation.delta_t/3600, true_anomaly_orbit)
+#        plt.title('true anomaly (initialisation)')
+#        plt.grid()
+#        plt.show()
+#        
         
         
         print('**********************************************')
