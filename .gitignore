@@ -2,6 +2,7 @@
 venv/
 pyvenv.cfg
 data/pyvista_env/
+papers/
 
 # Ignore Python cache directories and compiled files
 __pycache__/
