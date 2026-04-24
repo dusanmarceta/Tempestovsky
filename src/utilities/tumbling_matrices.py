@@ -17,6 +17,7 @@ import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 from mpl_toolkits.mplot3d import Axes3D
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+from scipy.integrate import solve_ivp
 
 def rodrigues(u, theta):
     """Return 3×3 rotation matrix rotating by theta around unit-vector u."""
@@ -171,294 +172,7 @@ def compute_tumbling_matrices(timesteps, ratio_im_il, ratio_is_il,
 
 
 
-# =============================================================================
-# 
-# # OVO RADI
-# def compute_tumbling_kinematics(timesteps, long_deg, lat_deg, theta_deg, P_spin, P_prec, n_cycles=1):
-#     """
-#     Simulacija složene rotacije prema tvojim uputstvima:
-#     - long, lat: Pravac vektora ugaonog momenta L u prostoru
-#     - theta_deg: Ugao između glavne ose inercije i vektora L (mislim da nije nego je ugao izmedju 0,0,1 i glavne ose)
-#     - P_spin: Period rotacije asteroida oko sopstvene ose
-#     - P_prec: Period precesije glavne ose oko vektora L
-#     
-#     
-#     Treba animirati i ose oko kojih se rotira, kao i osu precesije, i hodograf ose rotacije
-#     """
-#     
-#     # 1. Definisanje vektora ugaonog momenta L u prostoru (fiksiran)
-#     lon_rad = np.radians(long_deg)
-#     lat_rad = np.radians(lat_deg)
-#     L_hat = np.array([
-#         np.cos(lat_rad) * np.cos(lon_rad),
-#         np.cos(lat_rad) * np.sin(lon_rad),
-#         np.sin(lat_rad)
-#     ])
-# 
-#     # 2. Definisanje vremenskog koraka
-#     # Koristimo duži period kao bazu za ukupno vreme simulacije
-#     total_time = n_cycles * max(P_spin, P_prec)
-#     dt = total_time / timesteps
-#     
-#     omega_spin = 2 * np.pi / P_spin
-#     omega_prec = 2 * np.pi / P_prec
-#     theta = np.radians(theta_deg)
-# 
-#     rotations = []
-# 
-#     for i in range(timesteps):
-#         t = i * dt
-#         
-#         # --- KORAK A: Rotacija oko glavne ose inercije (Spin) ---
-#         # Pretpostavljamo da je glavna osa inicijalno Z osa tela
-#         psi = omega_spin * t
-#         R_spin = rodrigues_gemini(np.array([0, 0, 1]), psi)
-#         
-#         # --- KORAK B: Nagib za ugao theta ---
-#         # Ovo postavlja glavnu osu pod traženi ugao u odnosu na L
-#         # Rotiramo oko Y ose da bismo otklonili Z osu od vertikale
-#         R_tilt = rodrigues_gemini(np.array([0, 1, 0]), theta)
-# 
-#         # --- KORAK C: Precesija oko vektora L ---
-#         # Glavna osa sada kruži oko vektora L u prostoru
-#         phi = omega_prec * t
-#         R_prec = rodrigues_gemini(L_hat, phi)
-#         
-#         # --- KOMPOZICIJA ---
-#         # Redosled: prvo spin, pa nagib, pa precesija u prostoru
-#         # R_total transformiše vektor iz tela u prostor
-#         orientation = R_prec @ R_tilt @ R_spin
-#         
-#         rotations.append(orientation)
-# 
-#     return np.stack(rotations)
-# =============================================================================
-
-
-import numpy as np
-
-def compute_tumbling_kinematics(timesteps, long_deg, lat_deg, theta_deg, P_spin, P_prec, n_cycles=1):
-    # 1. Pravac ugaonog momenta L (fiksiran u prostoru)
-    lon_rad = np.radians(long_deg)
-    lat_rad = np.radians(lat_deg)
-    L_hat = np.array([
-        np.cos(lat_rad) * np.cos(lon_rad),
-        np.cos(lat_rad) * np.sin(lon_rad),
-        np.sin(lat_rad)
-    ])
-
-    # 2. Parametri
-    total_time = n_cycles * max(P_spin, P_prec)
-    dt = total_time / timesteps
-    omega_spin_mag = 2 * np.pi / P_spin
-    omega_prec_mag = 2 * np.pi / P_prec
-    theta = np.radians(theta_deg)
-
-    # Liste za čuvanje podataka
-    rotations = []
-    G_axes = []      # Glavna osa inercije u prostoru
-    omega_vecs = []  # Trenutni vektor ugaone brzine (za hodograf)
-
-    # Inicijalna glavna osa u lokalnom sistemu (Z-osa tela)
-    G_body = np.array([0, 0, 1])
-
-    for i in range(timesteps):
-        t = i * dt
-        
-        # --- Kinematika ---
-        # R_spin: Rotacija oko sopstvene ose
-        R_spin = rodrigues(G_body, omega_spin_mag * t)
-        
-        # R_tilt: Nagib glavne ose (Z) u odnosu na L (ako je L inicijalno Z)
-        # Ovde koristimo Y osu za tilt da bismo dobili otklon
-        R_tilt = rodrigues(np.array([0, 1, 0]), theta)
-
-        # R_prec: Precesija oko fiksne ose L
-        R_prec = rodrigues(L_hat, omega_prec_mag * t)
-        
-        # --- Matrica orijentacije (Body to Space) ---
-        orientation = R_prec @ R_tilt @ R_spin
-        rotations.append(orientation)
-
-        # --- Trenutni položaji osa u prostoru ---
-        # 1. Trenutni pravac glavne ose inercije G (ne zavisi od spina, samo od precesije)
-        G_space = R_prec @ R_tilt @ G_body
-        G_axes.append(G_space)
-
-        # 2. Trenutna ukupna ugaona brzina omega
-        # omega = omega_prec (oko L) + omega_spin (oko trenutne ose G)
-        w_vec = (omega_prec_mag * L_hat) + (omega_spin_mag * G_space)
-        omega_vecs.append(w_vec)
-
-    return {
-        'rotations': np.stack(rotations),
-        'L_axis': L_hat,             # Fiksni vektor
-        'G_axes': np.stack(G_axes),   # Niz vektora kroz vreme
-        'omega_axes': np.stack(omega_vecs), # Za hodograf (omega kroz vreme)
-        'time': np.linspace(0, total_time, timesteps)
-    }
-    
-
-
-
-
-def compute_tumbling_kinematics_1(timesteps, long_deg, lat_deg, theta_deg, P_spin, P_prec, n_cycles=1):
-    # 1. Pravac ugaonog momenta L (fiksiran u prostoru)
-    lon_rad = np.radians(long_deg)
-    lat_rad = np.radians(lat_deg)
-    L_hat = np.array([
-        np.cos(lat_rad) * np.cos(lon_rad),
-        np.cos(lat_rad) * np.sin(lon_rad),
-        np.sin(lat_rad)
-    ])
-
-    # 2. Parametri
-    total_time = n_cycles * max(P_spin, P_prec)
-    dt = total_time / timesteps
-    omega_spin_mag = 2 * np.pi / P_spin
-    omega_prec_mag = 2 * np.pi / P_prec
-    theta = np.radians(theta_deg)
-
-    rotations = []
-    G_axes = []      
-    omega_vecs = []  
-
-    # Inicijalna glavna osa u lokalnom sistemu (Z-osa tela)
-    G_body = np.array([0, 0, 1])
-
-    # Da bismo nagnuli G za ugao theta u odnosu na L, 
-    # moramo naći pomoćnu osu koja je normalna na L
-    # (npr. kros proizvod L i neke proizvoljne ose)
-    if abs(L_hat[2]) < 0.9:
-        ortho_axis = np.cross(L_hat, np.array([0, 0, 1]))
-    else:
-        ortho_axis = np.cross(L_hat, np.array([1, 0, 0]))
-    ortho_axis /= np.linalg.norm(ortho_axis)
-
-    # Inicijalni nagib: postavljamo G tako da zaklapa theta sa L
-    # R_initial_tilt postavlja G_space_0
-    R_initial_tilt = rodrigues(ortho_axis, theta)
-    G_space_0 = R_initial_tilt @ L_hat
-
-    for i in range(timesteps):
-        t = i * dt
-        
-        # --- Kinematika ---
-        # 1. Precesija glavne ose G oko vektora L
-        phi = omega_prec_mag * t
-        R_prec = rodrigues(L_hat, phi)
-        G_space = R_prec @ G_space_0
-        G_axes.append(G_space)
-
-        # 2. Rotacija tela oko te pokretne glavne ose G
-        psi = omega_spin_mag * t
-        R_spin_around_G = rodrigues(G_space, psi)
-        
-        # 3. Ukupna orijentacija (kumulativna)
-        # Primenjujemo inicijalni nagib, pa precesiju, pa spin
-        # Da bismo dobili matricu koja transformiše iz tela u prostor:
-        # Prvo rotiramo telo oko Z_body (spin), pa ga nagnemo, pa vrtimo oko L
-        # Ali pošto G_space već sadrži precesiju i nagib, koristimo to:
-        
-        # Inicijalna matrica koja poravnava G_body sa G_space_0
-        # (Ovo je matematički čistije preko baze)
-        orientation = R_spin_around_G @ R_prec @ R_initial_tilt
-        # Napomena: Možda će biti potreban dodatni korak poravnanja osa 
-        # zavisno od tvoje početne orijentacije modela, ali ovo je geometrijski core.
-        
-        rotations.append(orientation)
-
-        # --- Trenutna ukupna ugaona brzina omega ---
-        w_vec = (omega_prec_mag * L_hat) + (omega_spin_mag * G_space)
-        omega_vecs.append(w_vec)
-
-    return {
-        'rotations': np.stack(rotations),
-        'L_axis': L_hat,
-        'G_axes': np.stack(G_axes),
-        'omega_axes': np.stack(omega_vecs),
-        'time': np.linspace(0, total_time, timesteps)
-    }
-    
-
-
-
-
-
-def compute_tumbling_kinematics_2(timesteps, long_deg, lat_deg, theta_deg, phi_0_deg, P_spin, P_prec, n_cycles=1):
-    # 1. Pravac ugaonog momenta L (fiksiran u prostoru)
-    lon_rad = np.radians(long_deg)
-    lat_rad = np.radians(lat_deg)
-    L_hat = np.array([
-        np.cos(lat_rad) * np.cos(lon_rad),
-        np.cos(lat_rad) * np.sin(lon_rad),
-        np.sin(lat_rad)
-    ])
-
-    # 2. Parametri
-    total_time = n_cycles * max(P_spin, P_prec)
-    dt = total_time / timesteps
-    omega_spin_mag = 2 * np.pi / P_spin
-    omega_prec_mag = 2 * np.pi / P_prec
-    theta = np.radians(theta_deg)
-    phi_0 = np.radians(phi_0_deg)
-
-    rotations = []
-    G_axes = []      
-    omega_vecs = []  
-
-    # Inicijalna glavna osa u lokalnom sistemu (Z-osa tela)
-    G_body = np.array([0, 0, 1])
-
-    # Pronalaženje pomoćne ose normalne na L
-    if abs(L_hat[2]) < 0.9:
-        ortho_axis = np.cross(L_hat, np.array([0, 0, 1]))
-    else:
-        ortho_axis = np.cross(L_hat, np.array([1, 0, 0]))
-    ortho_axis /= np.linalg.norm(ortho_axis)
-
-    # NOVO: Rotiramo ortho_axis oko L za ugao phi_0 da bismo postavili početni azimut
-    R_azimuth = rodrigues(L_hat, phi_0)
-    ortho_axis_rotated = R_azimuth @ ortho_axis
-
-    # Inicijalni nagib: postavljamo G_space_0 koristeći rotirani ortho_axis
-    R_initial_tilt = rodrigues(ortho_axis_rotated, theta)
-    G_space_0 = R_initial_tilt @ L_hat
-
-    for i in range(timesteps):
-        t = i * dt
-        
-        # --- Kinematika ---
-        # 1. Precesija glavne ose G oko vektora L
-        phi = omega_prec_mag * t
-        R_prec = rodrigues(L_hat, phi)
-        G_space = R_prec @ G_space_0
-        G_axes.append(G_space)
-
-        # 2. Rotacija tela oko te pokretne glavne ose G
-        psi = omega_spin_mag * t
-        R_spin_around_G = rodrigues(G_space, psi)
-        
-        # 3. Ukupna orijentacija (kompozicija preostaje ista kao u tvom originalu)
-        orientation = R_spin_around_G @ R_prec @ R_initial_tilt
-        
-        rotations.append(orientation)
-
-        # --- Trenutna ukupna ugaona brzina omega ---
-        w_vec = (omega_prec_mag * L_hat) + (omega_spin_mag * G_space)
-        omega_vecs.append(w_vec)
-
-    return {
-        'rotations': np.stack(rotations),
-        'L_axis': L_hat,
-        'G_axes': np.stack(G_axes),
-        'omega_axes': np.stack(omega_vecs),
-        'time': np.linspace(0, total_time, timesteps)
-    }
-    
-    
-    
-def compute_tumbling_kinematics_3(timesteps, long_deg, lat_deg, theta_deg, phi_0_deg, G_body, P_spin, P_prec, n_cycles=1):
+def compute_tumbling_kinematics(timesteps, long_deg, lat_deg, theta_deg, phi_0_deg, G_body, P_spin, P_prec, n_cycles=1):
     # 1. Pravac ugaonog momenta L (fiksiran u prostoru)
     lon_rad = np.radians(long_deg)
     lat_rad = np.radians(lat_deg)
@@ -538,6 +252,112 @@ def compute_tumbling_kinematics_3(timesteps, long_deg, lat_deg, theta_deg, phi_0
 
 
 
+def compute_tumbling_dynamics(t_limit, y0, I, V_INERTIAL_FIXED, BODY_AXIS_TO_TRACK, timesteps=1000):
+    """
+    Rešava Eulerove jednačine i vraća rezultate uključujući i fiksni vektor ugaonog momenta L.
+    """
+    I1, I2, I3 = I
+    
+    # --- 1. Definisanje dinamike ---
+    def dynamics(t, y):
+        w1, w2, w3, phi, theta, psi = y
+        # Eulerove jednačine (Dinamika ugaonih brzina)
+        dw1 = ((I2 - I3) * w2 * w3) / I1
+        dw2 = ((I3 - I1) * w3 * w1) / I2
+        dw3 = ((I1 - I2) * w1 * w2) / I3
+        
+        # Kinematika Eulerovih uglova (3-1-3 konvencija)
+        st = np.sin(theta) if abs(np.sin(theta)) > 1e-9 else 1e-9
+        dphi = (w1 * np.sin(psi) + w2 * np.cos(psi)) / st
+        dtheta = w1 * np.cos(psi) - w2 * np.sin(psi)
+        dpsi = w3 - dphi * np.cos(theta)
+        
+        return [dw1, dw2, dw3, dphi, dtheta, dpsi]
+
+    # --- 2. Integracija ---
+    t_eval = np.linspace(0, t_limit, timesteps)
+    sol = solve_ivp(dynamics, (0, t_limit), y0, t_eval=t_eval, 
+                    method='DOP853', rtol=1e-11, atol=1e-13)
+    
+    # --- 3. Proračun ugaonog momenta L (Fiksan u inercijalnom prostoru) ---
+    # Uzimamo početne uslove (t=0) da odredimo L_hat
+    w0 = np.array([y0[0], y0[1], y0[2]])
+    phi0, theta0, psi0 = y0[3], y0[4], y0[5]
+    
+    c1, s1 = np.cos(phi0), np.sin(phi0)
+    c2, s2 = np.cos(theta0), np.sin(theta0)
+    c3, s3 = np.cos(psi0), np.sin(psi0)
+    
+    # Početna matrica R (Inercijalni -> Telo)
+    R0 = np.array([
+        [ c3*c1 - s3*c2*s1,  c3*s1 + s3*c2*c1, s3*s2],
+        [-s3*c1 - c3*c2*s1, -s3*s1 + c3*c2*c1, c3*s2],
+        [ s2*s1,            -s2*c1,            c2]
+    ])
+    
+    # L u sistemu tela: [I1*w1, I2*w2, I3*w3]
+    L_body = np.array([I1 * w0[0], I2 * w0[1], I3 * w0[2]])
+    # L u inercijalnom sistemu: R.T @ L_body
+    L_inertial = R0.T @ L_body
+    L_hat = L_inertial / np.linalg.norm(L_inertial)
+
+    # --- 4. Transformacije kroz vreme ---
+    rotations = []
+    v_body_coords = []
+    spin_axis_iner = []
+    body_axis_iner = []
+
+    for i in range(len(sol.t)):
+        phi_i, theta_i, psi_i = sol.y[3, i], sol.y[4, i], sol.y[5, i]
+        w_body = sol.y[0:3, i]
+        
+        ci, si = np.cos(phi_i), np.sin(phi_i)
+        cj, sj = np.cos(theta_i), np.sin(theta_i)
+        ck, sk = np.cos(psi_i), np.sin(psi_i)
+        
+        Ri = np.array([
+            [ ck*ci - sk*cj*si,  ck*si + sk*cj*ci, sk*sj],
+            [-sk*ci - ck*cj*si, -sk*si + ck*cj*ci, ck*sj],
+            [ sj*si,            -sj*ci,            cj]
+        ])
+        
+        rotations.append(Ri.T) # Telo -> Inercijalni
+        v_body_coords.append(Ri @ V_INERTIAL_FIXED)
+        spin_axis_iner.append(Ri.T @ w_body)
+        body_axis_iner.append(Ri.T @ BODY_AXIS_TO_TRACK)
+
+    return {
+        'rotations': np.stack(rotations),
+        'L_axis': L_hat,  # Vraća jedinični vektor ugaonog momenta
+        'v_body_coords': np.stack(v_body_coords),
+        'G_axes': np.stack(spin_axis_iner),
+        'omega_axes': np.stack(body_axis_iner),
+        'time': sol.t,
+        'omega_body': sol.y[0:3, :].T
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 def rotation_matrix_from_vectors(vec1, vec2):
     """ Pronalazi matricu rotacije koja prevodi vec1 u vec2 (jedinični vektori) """
@@ -547,16 +367,6 @@ def rotation_matrix_from_vectors(vec1, vec2):
     if s < 1e-10: return np.eye(3)
     kmat = np.array([[0, -v[2], v[1]], [v[2], 0, -v[0]], [-v[1], v[0], 0]])
     return np.eye(3) + kmat + kmat.dot(kmat) * ((1 - c) / (s ** 2))
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -640,205 +450,6 @@ def animate_rotation(shape_file, rotation_matrices, L_hat, omega_vectors, output
         
     return anim
 
-#def compute_real_tumbling(duration, dt, ratio_im_il, ratio_is_il, spinrate, tilt, cone):
-#    """
-#    Simulira realno, neperiodično kretanje sa početnim nagibom sistema (cone).
-#    
-#    duration: ukupno vreme u sekundama
-#    dt: vremenski korak integracije
-#    ratio_im_il: Imiddle / Ilong
-#    ratio_is_il: Ishort / Ilong
-#    spinrate: početna brzina rotacije
-#    tilt: ugao između L i ose asteroida (u stepenima)
-#    cone: ugao nagiba celog sistema u prostoru (u stepenima)
-#    """
-#    # --- 1. Momenti inercije ---
-#    Ilong   = 1.0
-#    Imiddle = ratio_im_il * Ilong
-#    Ishort  = ratio_is_il * Ilong
-#    Iinv    = np.diag([1.0/Ilong, 1.0/Imiddle, 1.0/Ishort])
-#
-#    # --- 2. Inicijalni ugaoni moment u lokalnom sistemu (body frame) ---
-#    theta_tilt = np.radians(tilt)
-#    # L_dir postavlja pravac ugaonog momenta unutar asteroida
-#    L_dir_body = np.array([np.sin(theta_tilt), 0.0, np.cos(theta_tilt)])
-#    Lmag  = Ishort * spinrate 
-#    L_body0 = Lmag * L_dir_body
-#
-#    # --- 3. Početna orijentacija (Space Frame) ---
-#    # Inicijalno, body ose se poklapaju sa space osama
-#    orientation = np.eye(3) 
-#
-#    # Primenjujemo CONE nagib oko Y-ose prostora
-#    theta_cone = np.radians(cone)
-#    if abs(theta_cone) > 1e-12:
-#        # Rodriguesova matrica rotacije za fiksni nagib sistema
-#        K_y = np.array([[0, 0, 1], [0, 0, 0], [-1, 0, 0]])
-#        R_cone = np.eye(3) + np.sin(theta_cone)*K_y + (1 - np.cos(theta_cone))*(K_y @ K_y)
-#        orientation = R_cone @ orientation
-#
-#    # FIKSIRAMO L u prostoru na osnovu početne orijentacije
-#    # Od ovog trenutka, L_space se više ne menja (zakon održanja)
-#    L_space = orientation @ L_body0
-#    
-#    total_steps = int(duration / dt)
-#    rotations = []
-#
-#    # --- 4. Integraciona petlja ---
-#    for _ in range(total_steps):
-#        # Projektujemo konstantni L nazad u rotirajući asteroid (body frame)
-#        L_body = orientation.T @ L_space
-#        
-#        # w = I^-1 * L
-#        w_body = Iinv @ L_body
-#        w_norm = np.linalg.norm(w_body)
-#
-#        # Inkrementalna rotacija za delić vremena dt
-#        if w_norm > 1e-15:
-#            axis = w_body / w_norm
-#            angle = w_norm * dt
-#            K = np.array([[0, -axis[2], axis[1]],
-#                          [axis[2], 0, -axis[0]],
-#                          [-axis[1], axis[0], 0]])
-#            deltaR = np.eye(3) + np.sin(angle)*K + (1 - np.cos(angle))*(K @ K)
-#            
-#            # Ažuriranje orijentacije: Nova = Inkrement * Stara
-#            orientation = deltaR @ orientation
-#
-#        rotations.append(orientation.copy())
-#
-#    return np.stack(rotations)
-
-
-
-
-
-
-
-
-#def compute_tumbling_matrices_any(duration, dt, T_spin, T_prec, tilt, cone):
-#    """
-#    Računa matrice rotacije za proizvoljne periode bez racionalne aproksimacije.
-#    
-#    duration: Ukupno vreme simulacije (npr. u satima)
-#    dt: Vremenski korak (npr. 0.1 sat)
-#    T_spin: Period rotacije oko sopstvene ose (sati)
-#    T_prec: Period precesije ose (sati)
-#    tilt: Ugao nagnutosti (stepeni)
-#    cone: Početni položaj sistema u prostoru (stepeni)
-#    """
-#
-#    # --- Prebacivanje perioda u ugaone brzine ---
-#    spinrate = 2 * np.pi / T_spin
-#    omega_prec = 2 * np.pi / T_prec
-#
-#    # --- Definisanje fiktivne fizike koja podržava ove periode ---
-#    # Koristimo stabilan model simetričnog rotora (I1 = I2)
-#    # Iz fizike precesije: omega_prec = spinrate * (Ilong/Ishort - 1) * cos(tilt)
-#    Ilong = 1.0
-#    Imiddle = 1.0
-#    # Izvodimo Ishort tako da numerička integracija proizvede tvoj T_prec
-#    cos_tilt = np.cos(np.radians(tilt))
-#    if cos_tilt == 0: cos_tilt = 1e-9 # Izbegavanje deljenja nulom kod 90 stepeni
-#    
-#    Ishort = Ilong / (1.0 + (omega_prec / (spinrate * cos_tilt)))
-#    
-#    Ibody = np.diag([Ilong, Imiddle, Ishort])
-#    Iinv = np.linalg.inv(Ibody)
-#
-#    # --- Početni uslovi ---
-#    theta_tilt = np.radians(tilt)
-#    L_dir = np.array([np.sin(theta_tilt), 0.0, np.cos(theta_tilt)])
-#    Lmag = Ishort * spinrate 
-#    L_body0 = Lmag * L_dir
-#
-#    # --- Početna orijentacija sa CONE nagibom ---
-#    orientation = np.eye(3)
-#    theta_cone = np.radians(cone)
-#    # Rodrigues oko space Y ose
-#    Ky = np.array([[0, 0, 1], [0, 0, 0], [-1, 0, 0]])
-#    R_cone = np.eye(3) + np.sin(theta_cone)*Ky + (1 - np.cos(theta_cone))*(Ky @ Ky)
-#    orientation = R_cone @ orientation
-#
-#    # L je konstantan u prostoru (Inertial Frame)
-#    L_space = orientation @ L_body0
-#    
-#    total_steps = int(duration / dt)
-#    rotations = []
-#
-#    # --- Integraciona petlja ---
-#    for step in range(total_steps):
-#        # 1. Projektuj L u body frame
-#        L_body = orientation.T @ L_space
-#        
-#        # 2. Izračunaj trenutnu ugaonu brzinu w
-#        w_body = Iinv @ L_body
-#        w_norm = np.linalg.norm(w_body)
-#
-#        # 3. Rodriguesova inkrementalna rotacija
-#        if w_norm > 1e-15:
-#            axis = w_body / w_norm
-#            angle = w_norm * dt
-#            K = np.array([[0, -axis[2], axis[1]],
-#                          [axis[2], 0, -axis[0]],
-#                          [-axis[1], axis[0], 0]])
-#            deltaR = np.eye(3) + np.sin(angle)*K + (1 - np.cos(angle))*(K @ K)
-#            
-#            # 4. Ažuriraj orijentaciju
-#            orientation = deltaR @ orientation
-#
-#        rotations.append(orientation.copy())
-#
-#    return np.stack(rotations)
-
-
-
-
-# =============================================================================
-# if __name__ == "__main__":
-#     # Parameters
-# #    shape_file = "../../data/shape_models/67P_not_to_scale_low_res.stl"
-# #    shape_file = "../../data/shape_models/500m_ico_sphere_1280_facets.stl"
-# #    shape_file = "../../data/shape_models/Apophis.stl"
-#     shape_file = "../../data/shape_models/Rubber_Duck_1500_facets.stl"
-#     
-#     
-#     
-#     
-#     fps = 30
-#     timesteps = 500
-#     lat = 90
-#     long = 0
-#     theta_deg = 30
-#     P_spin = 0.025
-#     P_prec = 1
-#     n_cycles = 0.5
-#     print("Computing rotation matrices...")
-#         
-#     
-#     rotations = compute_tumbling_kinematics(
-#             timesteps, 
-#             long, 
-#             lat, 
-#             theta_deg, 
-#             P_spin, 
-#             P_prec, n_cycles = n_cycles)
-#     
-#     output_file = "tumbling_animation.gif"
-#     animate_rotation(
-#         shape_file=shape_file,
-#         rotation_matrices=rotations,
-#         output_file=output_file,
-#         fps=fps,
-#         skip_frames=1  # Skip frames to reduce file size
-#     )
-# 
-#     # Print length of rotations
-#     print(f"Length of rotations: {len(rotations)}")
-#     
-#     print(f"Animation saved to {output_file}")
-# =============================================================================
-
 
 
 if __name__ == "__main__":
@@ -846,9 +457,36 @@ if __name__ == "__main__":
 #    shape_file = "../../data/shape_models/Apophis.stl"
     shape_file = "../../data/shape_models/Rubber_Duck_1500_facets.stl"
     
+  
+    
+    
+        # --- 1. PARAMETRI IZ TABELE 2 (Apofis) ---
+    I1, I2, I3 = 0.61, 0.965, 1.0
+    P_phi_h = 27.38
+    w_phi = (2 * np.pi) / (P_phi_h * 3600)
+
+    # Početni uslovi (SAM režim - Short Axis Mode)
+    theta_start = np.deg2rad(37.0)
+    psi_start = np.deg2rad(14.0)
+    phi_start = np.deg2rad(152.0)
+    
+    # Vektori za praćenje
+    V_INERTIAL_FIXED = np.array([1.0, 0.0, 0.0]) # Npr. pravac ka Suncu
+    BODY_AXIS_TO_TRACK = np.array([0.0, 0.0, 1.0]) # Najkraća osa (I3)
+
+    # Izračunavanje momenta L i početnih w komponenti
+    L_fixed = w_phi * ((I1 + I2) / 2) / np.cos(theta_start)
+    w1_0 = (L_fixed * np.sin(theta_start) * np.sin(psi_start)) / I1
+    w2_0 = (L_fixed * np.sin(theta_start) * np.cos(psi_start)) / I2
+    w3_0 = (L_fixed * np.cos(theta_start)) / I3
+
+    y0 = [w1_0, w2_0, w3_0, phi_start, theta_start, psi_start]
+    t_limit = 50 * 24 * 3600 # 3 dana
+
+    
     # Parametri simulacije
     fps = 30
-    timesteps = 500
+    timesteps = 10000
     lat = 60
     long = -90
     theta_deg = 32.8
@@ -861,17 +499,23 @@ if __name__ == "__main__":
     print("Computing kinematics (rotations, axes, and hodograph)...")
     
     # Pozivamo funkciju koja sada vraća rečnik sa svim podacima
-    sim_data = compute_tumbling_kinematics_3(
-        timesteps=timesteps, 
-        long_deg=long, 
-        lat_deg=lat, 
-        theta_deg=theta_deg,
-        phi_0_deg = phi_0_deg,
-        G_body = G_body,
-        P_spin=P_spin, 
-        P_prec=P_prec, 
-        n_cycles=n_cycles
-    )
+# =============================================================================
+#     sim_data = compute_tumbling_kinematics(
+#         timesteps=timesteps, 
+#         long_deg=long, 
+#         lat_deg=lat, 
+#         theta_deg=theta_deg,
+#         phi_0_deg = phi_0_deg,
+#         G_body = G_body,
+#         P_spin=P_spin, 
+#         P_prec=P_prec, 
+#         n_cycles=n_cycles
+#     )
+# =============================================================================
+    
+    
+    sim_data = compute_tumbling_dynamics(t_limit, y0, np.array([I1, I2, I3]), V_INERTIAL_FIXED, BODY_AXIS_TO_TRACK, timesteps=timesteps)
+    
     
     # Izdvajamo ono što nam treba za animaciju
     rotations = sim_data['rotations']
