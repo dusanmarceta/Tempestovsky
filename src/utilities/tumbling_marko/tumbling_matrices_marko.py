@@ -44,7 +44,7 @@ def compute_tumbling_dynamics(dt, timesteps, y0, I, r_inertial, BODY_AXIS_TO_TRA
     
     timesteps: broj vremenskih koraka
     
-    y0: pocetno stanje (vidi liniju ????)
+    y0: pocetno stanje (vidi liniju 404)
     
     I: momenti inercije za 3 glavne ose
     
@@ -382,7 +382,6 @@ if __name__ == "__main__":
     dt = 1000 # vremenski korak
     timesteps = 500 # broj koraka
 
-      
         # --- 1. PARAMETRI IZ TABELE 2 (Apofis) ---
     I1, I2, I3 = 0.61, 0.965, 1.0
     P_phi_h = 27.38
@@ -397,16 +396,13 @@ if __name__ == "__main__":
     V_INERTIAL_FIXED = np.array([1.0, 0.0, 0.0]) # Npr. pravac ka Suncu
     BODY_AXIS_TO_TRACK = np.array([0.0, 0.0, 1.0]) # Najkraća osa (I3)
 
-    # Izračunavanje momenta L i početnih w komponenti
+    # Izračunavanje momenta L i početnih w komponenti (mislim da je kriticno proveriti da li je ovo dobro)
     L_fixed = w_phi * ((I1 + I2) / 2) / np.cos(theta_start)
     w1_0 = (L_fixed * np.sin(theta_start) * np.sin(psi_start)) / I1
     w2_0 = (L_fixed * np.sin(theta_start) * np.cos(psi_start)) / I2
     w3_0 = (L_fixed * np.cos(theta_start)) / I3
-
-    y0 = [w1_0, w2_0, w3_0, phi_start, theta_start, psi_start] #pocetni uslovvi
+    y0 = [w1_0, w2_0, w3_0, phi_start, theta_start, psi_start] # pocetni uslovvi 
     
-    t_limit = 1 * P_phi_h * 3600 # ukupno trajanje simulacije
-
 
     # --- PRVA SIMULACIJA (Prva 3 dana) ---
     sim_data_1 = compute_tumbling_dynamics(
