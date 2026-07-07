@@ -327,7 +327,7 @@ def sun_direction(time_from_aphelion, simulation):
      
      return (direction/np.linalg.norm(direction), r * const.au.value, true_anomaly)
  
-def spin_axis_position(ra_):
+#def spin_axis_position(ra_):
     
     
      

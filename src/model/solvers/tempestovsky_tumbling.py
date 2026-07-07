@@ -1,5 +1,9 @@
 import matplotlib.pyplot as plt
 
+'''
+proveriti insolaciju i uporediti sa njihovom insolacijom, nesto tu nije u redu, verovatno se dobija mnogo vise.
+
+'''
 import numpy as np
 from numba import jit
 from .base_solver import TemperatureSolver
@@ -28,6 +32,9 @@ def calculate_temperatures(temperatures, layer_temperatures, insolation, visible
     for time_step in range(timesteps_per_day):
         # Swap columns for next iteration
         current_column, prev_column = prev_column, current_column
+        
+        
+        
         
         for i in range(n_facets):
             # Surface temperature calculation
@@ -212,7 +219,9 @@ class YarkovskySolver(TemperatureSolver):
         volume, normals, areas = geometry_for_yarko(shape_model)
         asteroid_mass = volume * simulation.density
         
-
+        
+#
+#        
 #        # indeks najblizi ekvatoru
 #        idx_equator = np.argmin(np.abs(normals[:,2]))
 #
@@ -232,8 +241,11 @@ class YarkovskySolver(TemperatureSolver):
         error_history = []
         comparison_temps = thermal_data.temperatures[:, 0].copy()
         
-        # Initialization
-
+        
+        
+        '''
+        First initialization (no orbital motion and no tumbling!)
+        '''
         while day < simulation.max_days and (day < simulation.min_days or convergence_error > simulation.convergence_target):
             current_day_temperature = calculate_temperatures(
                 thermal_data.temperatures,
@@ -336,24 +348,16 @@ class YarkovskySolver(TemperatureSolver):
         print('**********************************************')
         print('**********************************************')
         print('**********************************************')
-        print('Diurnal Initialization finished') 
-        print('delta t', simulation.delta_t)
+        print('Stationary initialization finished') 
         print('**********************************************')
         print('**********************************************')
         print('**********************************************')
         
         
-        
-        '''
-        this must be input parameter
-        '''
         number_of_orbit_sections = 500
         
         
         
-# 
-
-#        
         
         counter = 0
         thermal_data.layer_temperatures = thermal_data.layer_temperatures[:, 1, :]
@@ -376,6 +380,10 @@ class YarkovskySolver(TemperatureSolver):
                 
                 precomputed_insolation, true_anomaly, current_sun_distance, r_rad, r_trans = calculate_insolation_orbit_section(thermal_data, shape_model, simulation, config, timesteps_per_orbit_section, orbit_section, initialisation = 1)
     
+                
+                
+                
+                
                 for t in range(timesteps_per_orbit_section[orbit_section]):
         
     
@@ -510,9 +518,7 @@ class YarkovskySolver(TemperatureSolver):
                 
                 counter += 1
 
-        print('poluprecnik', poluprecnik)
-        print('zapremina', volume)
-        print('povrsina', np.sum(areas))
+
         print('drift', np.mean(drift))
 
         plt.figure()

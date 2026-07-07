@@ -8,11 +8,11 @@ silent_mode: false                  # Set to true when running batch jobs (suppr
 remote: false                       # Set to true when running on a remote server (suppresses plotting)
 
 # File paths
-shape_model_file: "500m_ico_sphere_1280_facets.stl"  # Name of the shape model file in data/shape_models/
+shape_model_file: "500m_ico_sphere_80_facets.stl"  # Name of the shape model file in data/shape_models/
 shape_model_directory: "data/shape_models/"    
 
 # Physical parameters
-thermal_inertia:        3000    # W m⁻² K⁻¹ s⁻½ -
+thermal_inertia:        500    # W m⁻² K⁻¹ s⁻½ -
 density:                1000    # kg/m³
 specific_heat_capacity: 1000    # J/kg·K
 emissivity:             0.95         
@@ -30,12 +30,12 @@ max_days:               20          # Maximum number of days to run simulation
 min_days:               1           # Minimum number of days to run simulation
 
 # Orbital and rotational parameters
-a_au:                   0.5           # Semi-major axis
-ecc:                    0           # Eccentricity
-rotation_period_hours:  120          # Syderic rotation 
-ra_degrees:             126          # Right ascension of the object's pole (0 is the vernal equinox)
-dec_degrees:            1          # Declination of the object's pole (90 is the north pole) BUG: setting to 0 causes the model to crash
-orbital_initialisation: 5.75
+a_au:                   1           # Semi-major axis
+ecc:                    0.32           # Eccentricity
+rotation_period_hours:  4          # Syderic rotation 
+ra_degrees:             45          # Right ascension of the object's pole (0 is the vernal equinox)
+dec_degrees:            -30          # Declination of the object's pole (90 is the north pole) BUG: setting to 0 causes the model to crash
+orbital_initialisation: 1
 
 # Yarkovsky effect related parameters
 seasonal_effect: "yes"

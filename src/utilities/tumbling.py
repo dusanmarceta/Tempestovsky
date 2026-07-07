@@ -39,7 +39,7 @@ w2_0 = (L_fixed * np.sin(theta_start) * np.cos(psi_start)) / I2
 w3_0 = (L_fixed * np.cos(theta_start)) / I3
 
 y0 = [w1_0, w2_0, w3_0, phi_start, theta_start, psi_start]
-t_limit = 10 * 24 * 3600 
+t_limit = 30 * 24 * 3600 
 
 # --- 2. DINAMIKA ---
 def dynamics(t, y):

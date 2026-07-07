@@ -172,87 +172,89 @@ def compute_tumbling_matrices(timesteps, ratio_im_il, ratio_is_il,
 
 
 
-def compute_tumbling_kinematics(timesteps, long_deg, lat_deg, theta_deg, phi_0_deg, G_body, P_spin, P_prec, n_cycles=1):
-    # 1. Pravac ugaonog momenta L (fiksiran u prostoru)
-    lon_rad = np.radians(long_deg)
-    lat_rad = np.radians(lat_deg)
-    L_hat = np.array([
-        np.cos(lat_rad) * np.cos(lon_rad),
-        np.cos(lat_rad) * np.sin(lon_rad),
-        np.sin(lat_rad)
-    ])
+# =============================================================================
+# def compute_tumbling_kinematics(timesteps, long_deg, lat_deg, theta_deg, phi_0_deg, G_body, P_spin, P_prec, n_cycles=1):
+#     # 1. Pravac ugaonog momenta L (fiksiran u prostoru)
+#     lon_rad = np.radians(long_deg)
+#     lat_rad = np.radians(lat_deg)
+#     L_hat = np.array([
+#         np.cos(lat_rad) * np.cos(lon_rad),
+#         np.cos(lat_rad) * np.sin(lon_rad),
+#         np.sin(lat_rad)
+#     ])
+# 
+#     # 2. Parametri
+#     total_time = n_cycles * max(P_spin, P_prec)
+#     dt = total_time / timesteps
+#     omega_spin_mag = 2 * np.pi / P_spin
+#     omega_prec_mag = 2 * np.pi / P_prec
+#     theta = np.radians(theta_deg)
+#     phi_0 = np.radians(phi_0_deg)
+#     
+#     # Osiguravamo da je G_body jedinični vektor
+#     G_body = np.array(G_body) / np.linalg.norm(G_body)
+# 
+#     rotations = []
+#     G_axes = []      
+#     omega_vecs = []  
+# 
+#     # Pronalaženje pomoćne ose normalne na L za definisanje nagiba
+#     if abs(L_hat[2]) < 0.9:
+#         ortho_axis = np.cross(L_hat, np.array([0, 0, 1]))
+#     else:
+#         ortho_axis = np.cross(L_hat, np.array([1, 0, 0]))
+#     ortho_axis /= np.linalg.norm(ortho_axis)
+# 
+#     # Rotiramo ortho_axis oko L za početni azimut phi_0
+#     R_azimuth = rodrigues(L_hat, phi_0)
+#     ortho_axis_rotated = R_azimuth @ ortho_axis
+# 
+#     # Inicijalni nagib: Postavljamo ciljni pravac G_space_0 u prostoru
+#     R_tilt_L = rodrigues(ortho_axis_rotated, theta)
+#     G_space_0 = R_tilt_L @ L_hat
+# 
+#     # DODATAK: Matrica koja inicijalno poravnava G_body sa G_space_0
+#     # Koristimo pomoćnu funkciju za rotaciju između dva vektora
+#     R_align = rotation_matrix_from_vectors(G_body, G_space_0)
+# 
+#     for i in range(timesteps):
+#         t = i * dt
+#         
+#         # --- Kinematika ---
+#         # 1. Precesija pravca G oko L
+#         phi = omega_prec_mag * t
+#         R_prec = rodrigues(L_hat, phi)
+#         G_space = R_prec @ G_space_0
+#         G_axes.append(G_space)
+# 
+#         # 2. Rotacija tela oko te pokretne ose G_space
+#         psi = omega_spin_mag * t
+#         R_spin_around_G = rodrigues(G_space, psi)
+#         
+#         # 3. Ukupna orijentacija
+#         # Redosled: Inicijalno poravnanje -> Precesija -> Spin oko G
+#         orientation = R_spin_around_G @ R_prec @ R_align
+#         
+#         rotations.append(orientation)
+# 
+#         # --- Trenutna ukupna ugaona brzina ---
+#         w_vec = (omega_prec_mag * L_hat) + (omega_spin_mag * G_space)
+#         omega_vecs.append(w_vec)
+# 
+#     return {
+#         'rotations': np.stack(rotations),
+#         'L_axis': L_hat,
+#         'G_axes': np.stack(G_axes),
+#         'omega_axes': np.stack(omega_vecs),
+#         'time': np.linspace(0, total_time, timesteps)
+#     }
+# 
+# =============================================================================
 
-    # 2. Parametri
-    total_time = n_cycles * max(P_spin, P_prec)
-    dt = total_time / timesteps
-    omega_spin_mag = 2 * np.pi / P_spin
-    omega_prec_mag = 2 * np.pi / P_prec
-    theta = np.radians(theta_deg)
-    phi_0 = np.radians(phi_0_deg)
-    
-    # Osiguravamo da je G_body jedinični vektor
-    G_body = np.array(G_body) / np.linalg.norm(G_body)
-
-    rotations = []
-    G_axes = []      
-    omega_vecs = []  
-
-    # Pronalaženje pomoćne ose normalne na L za definisanje nagiba
-    if abs(L_hat[2]) < 0.9:
-        ortho_axis = np.cross(L_hat, np.array([0, 0, 1]))
-    else:
-        ortho_axis = np.cross(L_hat, np.array([1, 0, 0]))
-    ortho_axis /= np.linalg.norm(ortho_axis)
-
-    # Rotiramo ortho_axis oko L za početni azimut phi_0
-    R_azimuth = rodrigues(L_hat, phi_0)
-    ortho_axis_rotated = R_azimuth @ ortho_axis
-
-    # Inicijalni nagib: Postavljamo ciljni pravac G_space_0 u prostoru
-    R_tilt_L = rodrigues(ortho_axis_rotated, theta)
-    G_space_0 = R_tilt_L @ L_hat
-
-    # DODATAK: Matrica koja inicijalno poravnava G_body sa G_space_0
-    # Koristimo pomoćnu funkciju za rotaciju između dva vektora
-    R_align = rotation_matrix_from_vectors(G_body, G_space_0)
-
-    for i in range(timesteps):
-        t = i * dt
-        
-        # --- Kinematika ---
-        # 1. Precesija pravca G oko L
-        phi = omega_prec_mag * t
-        R_prec = rodrigues(L_hat, phi)
-        G_space = R_prec @ G_space_0
-        G_axes.append(G_space)
-
-        # 2. Rotacija tela oko te pokretne ose G_space
-        psi = omega_spin_mag * t
-        R_spin_around_G = rodrigues(G_space, psi)
-        
-        # 3. Ukupna orijentacija
-        # Redosled: Inicijalno poravnanje -> Precesija -> Spin oko G
-        orientation = R_spin_around_G @ R_prec @ R_align
-        
-        rotations.append(orientation)
-
-        # --- Trenutna ukupna ugaona brzina ---
-        w_vec = (omega_prec_mag * L_hat) + (omega_spin_mag * G_space)
-        omega_vecs.append(w_vec)
-
-    return {
-        'rotations': np.stack(rotations),
-        'L_axis': L_hat,
-        'G_axes': np.stack(G_axes),
-        'omega_axes': np.stack(omega_vecs),
-        'time': np.linspace(0, total_time, timesteps)
-    }
 
 
 
-
-
-def compute_tumbling_dynamics(t_limit, y0, I, V_INERTIAL_FIXED, BODY_AXIS_TO_TRACK, timesteps=1000):
+def compute_tumbling_dynamics(dt, timesteps, y0, I, r_inertial, BODY_AXIS_TO_TRACK):
     """
     Rešava Eulerove jednačine i vraća rezultate uključujući i fiksni vektor ugaonog momenta L.
     """
@@ -275,8 +277,8 @@ def compute_tumbling_dynamics(t_limit, y0, I, V_INERTIAL_FIXED, BODY_AXIS_TO_TRA
         return [dw1, dw2, dw3, dphi, dtheta, dpsi]
 
     # --- 2. Integracija ---
-    t_eval = np.linspace(0, t_limit, timesteps)
-    sol = solve_ivp(dynamics, (0, t_limit), y0, t_eval=t_eval, 
+    t_eval = np.arange(timesteps) * dt
+    sol = solve_ivp(dynamics, (0, t_eval[-1]), y0, t_eval=t_eval, 
                     method='DOP853', rtol=1e-11, atol=1e-13)
     
     # --- 3. Proračun ugaonog momenta L (Fiksan u inercijalnom prostoru) ---
@@ -303,7 +305,7 @@ def compute_tumbling_dynamics(t_limit, y0, I, V_INERTIAL_FIXED, BODY_AXIS_TO_TRA
 
     # --- 4. Transformacije kroz vreme ---
     rotations = []
-    v_body_coords = []
+    r_body_coords = []
     spin_axis_iner = []
     body_axis_iner = []
 
@@ -322,19 +324,215 @@ def compute_tumbling_dynamics(t_limit, y0, I, V_INERTIAL_FIXED, BODY_AXIS_TO_TRA
         ])
         
         rotations.append(Ri.T) # Telo -> Inercijalni
-        v_body_coords.append(Ri @ V_INERTIAL_FIXED)
+        r_body_coords.append(Ri @ r_inertial)
         spin_axis_iner.append(Ri.T @ w_body)
         body_axis_iner.append(Ri.T @ BODY_AXIS_TO_TRACK)
 
+    # --- NOVI DEO: Čuvanje poslednjeg stanja ---
+    # sol.y[:,-1] uzima sve promenljive (w1, w2, w3, phi, theta, psi) iz poslednjeg vremenskog koraka
+    last_state = sol.y[:, -1].tolist() 
+
+    # ... (tvoj postojeći kod za transformacije kroz vreme) ...
+
     return {
         'rotations': np.stack(rotations),
-        'L_axis': L_hat,  # Vraća jedinični vektor ugaonog momenta
-        'v_body_coords': np.stack(v_body_coords),
+        'L_axis': L_hat,
+        'r_sun': np.stack(r_body_coords),
         'G_axes': np.stack(spin_axis_iner),
         'omega_axes': np.stack(body_axis_iner),
         'time': sol.t,
-        'omega_body': sol.y[0:3, :].T
+        'omega_body': sol.y[0:3, :].T,
+        'last_state': last_state  # DODATO: spremno za sledeći y0
     }
+    
+    
+
+
+
+
+
+
+def tumbling_rotation(dt, timesteps, y0, I, r_inertial, t_inertial):
+    """
+    Rešava Eulerove jednačine i vraća rezultate uključujući i fiksni vektor ugaonog momenta L.
+    """
+    I1, I2, I3 = I
+    
+    t_eval = np.arange(timesteps) * dt
+    # --- 1. Definisanje dinamike ---
+    def dynamics(t, y):
+        w1, w2, w3, phi, theta, psi = y
+        # Eulerove jednačine (Dinamika ugaonih brzina)
+        dw1 = ((I2 - I3) * w2 * w3) / I1
+        dw2 = ((I3 - I1) * w3 * w1) / I2
+        dw3 = ((I1 - I2) * w1 * w2) / I3
+        
+        # Kinematika Eulerovih uglova (3-1-3 konvencija)
+        st = np.sin(theta) if abs(np.sin(theta)) > 1e-9 else 1e-9
+        dphi = (w1 * np.sin(psi) + w2 * np.cos(psi)) / st
+        dtheta = w1 * np.cos(psi) - w2 * np.sin(psi)
+        dpsi = w3 - dphi * np.cos(theta)
+        
+        return [dw1, dw2, dw3, dphi, dtheta, dpsi]
+
+    # --- 2. Integracija ---
+    sol = solve_ivp(dynamics, (0, t_eval[-1]), y0, t_eval=t_eval, 
+                    method='DOP853', rtol=1e-11, atol=1e-13)
+    
+    last_state = sol.y[:, -1].tolist()
+    
+    # --- 3. Proračun ugaonog momenta L (Fiksan u inercijalnom prostoru) ---
+    # Uzimamo početne uslove (t=0) da odredimo L_hat
+#    w0 = np.array([y0[0], y0[1], y0[2]])
+#    phi0, theta0, psi0 = y0[3], y0[4], y0[5]
+    
+#    phi0 = y0[3]
+    
+#    c1, s1 = np.cos(phi0), np.sin(phi0)
+#    c2, s2 = np.cos(theta0), np.sin(theta0)
+#    c3, s3 = np.cos(psi0), np.sin(psi0)
+    
+    # Početna matrica R (Inercijalni -> Telo)
+#    R0 = np.array([
+#        [ c3*c1 - s3*c2*s1,  c3*s1 + s3*c2*c1, s3*s2],
+#        [-s3*c1 - c3*c2*s1, -s3*s1 + c3*c2*c1, c3*s2],
+#        [ s2*s1,            -s2*c1,            c2]
+#    ])
+#    
+    # L u sistemu tela: [I1*w1, I2*w2, I3*w3]
+#    L_body = np.array([I1 * w0[0], I2 * w0[1], I3 * w0[2]]) # NE TREBA!
+    # L u inercijalnom sistemu: R.T @ L_body
+#    L_inertial = R0.T @ L_body # NE TREBA!
+#    L_hat = L_inertial / np.linalg.norm(L_inertial) # NE TREBA!
+
+    # --- 4. Transformacije kroz vreme ---
+#    rotations = []
+    r_body_coords = []
+    t_body_coords = []
+#    spin_axis_iner = []
+#    body_axis_iner = []
+
+    
+
+    for i in range(len(sol.t)):
+        phi_i, theta_i, psi_i = sol.y[3, i], sol.y[4, i], sol.y[5, i]
+#        w_body = sol.y[0:3, i]
+        
+        ci, si = np.cos(phi_i), np.sin(phi_i)
+        cj, sj = np.cos(theta_i), np.sin(theta_i)
+        ck, sk = np.cos(psi_i), np.sin(psi_i)
+        
+        Ri = np.array([
+            [ ck*ci - sk*cj*si,  ck*si + sk*cj*ci, sk*sj],
+            [-sk*ci - ck*cj*si, -sk*si + ck*cj*ci, ck*sj],
+            [ sj*si,            -sj*ci,            cj]
+        ])
+        
+#        rotations.append(Ri.T) # Telo -> Inercijalni
+        r_body_coords.append(Ri @ r_inertial)
+        t_body_coords.append(Ri @ r_inertial)
+#        spin_axis_iner.append(Ri.T @ w_body)
+#        body_axis_iner.append(Ri.T @ BODY_AXIS_TO_TRACK)
+
+    return {
+        'r_body_fixed': r_body_coords,
+        't_body_fixed': t_body_coords,
+        'last_state': last_state  # DODATO: spremno za sledeći y0
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+def tumbling_rotation_1(dt, timesteps, y0, I, r_inertial):
+    """
+    Rešava Eulerove jednačine i vraća rezultate uključujući i fiksni vektor ugaonog momenta L.
+    
+    
+    TREBA STAVITI DA JE r_inertial NIZ!!!!
+    """
+    I1, I2, I3 = I
+    
+    
+    print(np.shape(r_inertial))
+    t_inertial = np.cross(r_inertial, np.array([0, 0, 1]))  # THIS IS OK
+    
+    # --- 1. Definisanje dinamike ---
+    def dynamics(t, y):
+        w1, w2, w3, phi, theta, psi = y
+        # Eulerove jednačine (Dinamika ugaonih brzina)
+        dw1 = ((I2 - I3) * w2 * w3) / I1
+        dw2 = ((I3 - I1) * w3 * w1) / I2
+        dw3 = ((I1 - I2) * w1 * w2) / I3
+        
+        # Kinematika Eulerovih uglova (3-1-3 konvencija)
+        st = np.sin(theta) if abs(np.sin(theta)) > 1e-9 else 1e-9
+        dphi = (w1 * np.sin(psi) + w2 * np.cos(psi)) / st
+        dtheta = w1 * np.cos(psi) - w2 * np.sin(psi)
+        dpsi = w3 - dphi * np.cos(theta)
+        
+        return [dw1, dw2, dw3, dphi, dtheta, dpsi]
+
+    # --- 2. Integracija ---
+    t_eval = np.arange(timesteps) * dt
+    sol = solve_ivp(dynamics, (0, t_eval[-1]), y0, t_eval=t_eval, 
+                    method='DOP853', rtol=1e-11, atol=1e-13)
+    
+    last_state = sol.y[:, -1].tolist()
+    
+    r_body_coords = []
+    t_body_coords = []
+    
+    
+
+    for i in range(len(sol.t)):
+        phi_i, theta_i, psi_i = sol.y[3, i], sol.y[4, i], sol.y[5, i]
+
+        ci, si = np.cos(phi_i), np.sin(phi_i)
+        cj, sj = np.cos(theta_i), np.sin(theta_i)
+        ck, sk = np.cos(psi_i), np.sin(psi_i)
+        
+        Ri = np.array([
+            [ ck*ci - sk*cj*si,  ck*si + sk*cj*ci, sk*sj],
+            [-sk*ci - ck*cj*si, -sk*si + ck*cj*ci, ck*sj],
+            [ sj*si,            -sj*ci,            cj]
+        ])
+        
+        r_body_coords.append(Ri @ r_inertial)
+        t_body_coords.append(Ri @ t_inertial)
+
+    return {
+        'r_body_fixed': r_body_coords,
+        't_body_fixed': t_body_coords,
+        'last_state': last_state  # DODATO: spremno za sledeći y0
+    }
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -389,11 +587,13 @@ def animate_rotation(shape_file, rotation_matrices, L_hat, omega_vectors, output
     ax.set_ylim(center[1] - max_range, center[1] + max_range)
     ax.set_zlim(center[2] - max_range, center[2] + max_range)
     
+    ax.view_init(elev=30, azim=260)
+    
     # --- NOVI ELEMENTI ---
     axis_length = max_range * 1.2
     # Fiksni vektor L (Plava)
     ax.quiver(0, 0, 0, L_hat[0]*axis_length, L_hat[1]*axis_length, L_hat[2]*axis_length, 
-              color='blue', label='L (Ugaoni moment)', linewidth=2)
+              color='k', label='L (Ugaoni moment)', linewidth=5)
     
     # Inicijalizacija strele za trenutnu osu rotacije (Cijan)
     omega_quiver = ax.quiver(0, 0, 0, 0, 0, 0, color='cyan', label='Omega (Trenutna osa)', linewidth=2)
@@ -401,16 +601,25 @@ def animate_rotation(shape_file, rotation_matrices, L_hat, omega_vectors, output
     # Inicijalizacija hodografa (Zuta linija)
     hodograf_line, = ax.plot([], [], [], color='red', label='Hodograf', lw=1.5)
     hodograf_pts = []
+
+    # Inicijalizacija ose inercije 1 (Crvena)
+    # Postavljamo je inicijalno duž x-ose
+    osa_1_dir = np.array([1, 0, 0]) * axis_length
+    osa_1 = ax.quiver(0, 0, 0, osa_1_dir[0], osa_1_dir[1], osa_1_dir[2], color='red', label='Glavna osa 1', linewidth=2)
+    
+    osa_2_dir = np.array([0, 1, 0]) * axis_length
+    osa_2 = ax.quiver(0, 0, 0, osa_2_dir[0], osa_2_dir[1], osa_2_dir[2], color='green', label='Glavna osa 2', linewidth=2)
+    
+    osa_3_dir = np.array([0, 0, 1]) * axis_length
+    osa_3 = ax.quiver(0, 0, 0, osa_3_dir[0], osa_3_dir[1], osa_3_dir[2], color='blue', label='Glavna osa 3', linewidth=2)
+    
     # ---------------------
 
     vertices_original = vertices.copy()
 
     def update(frame):
-        
         i = frame * skip_frames
-        
         print(i)
-        
         if i >= len(rotation_matrices):
             i = len(rotation_matrices) - 1
             
@@ -422,14 +631,25 @@ def animate_rotation(shape_file, rotation_matrices, L_hat, omega_vectors, output
         
         # --- UPDATE OSE I HODOGRAFA ---
         # Update trenutne ose rotacije (Omega)
-        nonlocal omega_quiver
+        nonlocal omega_quiver, osa_1, osa_2, osa_3
         omega_quiver.remove()
         w_vec = omega_vectors[i]
-        # Normalizujemo i skaliramo za prikaz
         w_dir = (w_vec / np.linalg.norm(w_vec)) * axis_length
         omega_quiver = ax.quiver(0, 0, 0, w_dir[0], w_dir[1], w_dir[2], color='cyan', linewidth=2)
         
-        # Update hodografa (dodajemo vrh omega vektora u niz)
+        # Update ose inercije 1 (Prati rotaciju R)
+        osa_1.remove()
+        osa_2.remove()
+        osa_3.remove()
+        # Inicijalni pravac (1,0,0) rotiramo matricom R
+        v1_rotated = R @ np.array([1, 0, 0]) * axis_length
+        v2_rotated = R @ np.array([0, 1, 0]) * axis_length
+        v3_rotated = R @ np.array([0, 0, 1]) * axis_length
+        osa_1 = ax.quiver(0, 0, 0, v1_rotated[0], v1_rotated[1], v1_rotated[2], color='red', linewidth=2)
+        osa_2 = ax.quiver(0, 0, 0, v2_rotated[0], v2_rotated[1], v2_rotated[2], color='green', linewidth=2)
+        osa_3 = ax.quiver(0, 0, 0, v3_rotated[0], v3_rotated[1], v3_rotated[2], color='blue', linewidth=2)
+
+        # Update hodografa
         hodograf_pts.append(w_dir)
         pts = np.array(hodograf_pts)
         hodograf_line.set_data(pts[:, 0], pts[:, 1])
@@ -437,7 +657,7 @@ def animate_rotation(shape_file, rotation_matrices, L_hat, omega_vectors, output
         # ------------------------------
         
         ax.set_title(f'Tumbling: Frame {i+1}/{len(rotation_matrices)}')
-        return collection, omega_quiver, hodograf_line
+        return collection, omega_quiver, osa_1, hodograf_line
 
     ax.legend()
     n_frames = len(rotation_matrices) // skip_frames
@@ -448,25 +668,57 @@ def animate_rotation(shape_file, rotation_matrices, L_hat, omega_vectors, output
     else:
         plt.show()
         
+    # --- SAVE LAST FRAME AS PDF ---
+    last_i = len(rotation_matrices) - 1
+    R = rotation_matrices[last_i]
+
+    rotated_vertices = (vertices_original - center) @ R.T + center
+    collection.set_verts(rotated_vertices)
+
+    # Update osa_1 za finalni frame
+    osa_1.remove()
+    v1_final = R @ np.array([1, 0, 0]) * axis_length
+    v2_final = R @ np.array([0, 1, 0]) * axis_length
+    v3_final = R @ np.array([0, 0, 1]) * axis_length
+    osa_1 = ax.quiver(0, 0, 0, v1_final[0], v1_final[1], v1_final[2], color='red', linewidth=2)
+    osa_2 = ax.quiver(0, 0, 0, v2_final[0], v2_final[1], v2_final[2], color='green', linewidth=2)
+    osa_3 = ax.quiver(0, 0, 0, v3_final[0], v3_final[1], v3_final[2], color='blue', linewidth=2)
+
+
+    # Update omega vector
+    w_vec = omega_vectors[last_i]
+    w_dir = (w_vec / np.linalg.norm(w_vec)) * axis_length
+    omega_quiver.remove()
+    omega_quiver = ax.quiver(0, 0, 0, w_dir[0], w_dir[1], w_dir[2], color='cyan', linewidth=2)
+
+    pts = np.array(hodograf_pts)
+    if len(pts) > 0:
+        hodograf_line.set_data(pts[:, 0], pts[:, 1])
+        hodograf_line.set_3d_properties(pts[:, 2])
+
+    ax.set_title("Final frame")
+    fig.savefig("last_frame.pdf", bbox_inches='tight')
+        
     return anim
 
 
 
 if __name__ == "__main__":
     # Putanja do tvog modela
-#    shape_file = "../../data/shape_models/Apophis.stl"
-    shape_file = "../../data/shape_models/Rubber_Duck_1500_facets.stl"
+    shape_file = "../../data/shape_models/Apophis.stl"
+#    shape_file = "../../data/shape_models/Rubber_Duck_1500_facets.stl"
     
   
     
     
         # --- 1. PARAMETRI IZ TABELE 2 (Apofis) ---
-    I1, I2, I3 = 0.61, 0.965, 1.0
+    # I1, I2, I3 = 0.61, 0.965, 1.0
+    I1, I2, I3 = 0.6, 0.6, 1.0
     P_phi_h = 27.38
     w_phi = (2 * np.pi) / (P_phi_h * 3600)
 
     # Početni uslovi (SAM režim - Short Axis Mode)
-    theta_start = np.deg2rad(37.0)
+    theta_start = np.deg2rad(56)
     psi_start = np.deg2rad(14.0)
     phi_start = np.deg2rad(152.0)
     
@@ -481,50 +733,97 @@ if __name__ == "__main__":
     w3_0 = (L_fixed * np.cos(theta_start)) / I3
 
     y0 = [w1_0, w2_0, w3_0, phi_start, theta_start, psi_start]
-    t_limit = 50 * 24 * 3600 # 3 dana
+    
+    t_limit = 1* P_phi_h * 3600 # 3 dana
 
     
+    dt = 10000
+    timesteps = 20
+    t_eval1 = np.arange(timesteps) * dt
+    
+    # sim_data = compute_tumbling_dynamics(t_limit, y0, np.array([I1, I2, I3]), V_INERTIAL_FIXED, BODY_AXIS_TO_TRACK, timesteps=timesteps)
+
+
+    # --- PRVA SIMULACIJA (Prva 3 dana) ---
+    sim_data_1 = compute_tumbling_dynamics(
+        dt, timesteps, y0, np.array([I1, I2, I3]), V_INERTIAL_FIXED, BODY_AXIS_TO_TRACK
+    )
+    
+    
+    
+    
+    
+    sim_data_11 = tumbling_rotation_1(dt, timesteps, y0, np.array([I1, I2, I3]), V_INERTIAL_FIXED)
+    
+    
+    # dt = -1000
+    # timesteps = 50
+    # t_eval2 = np.arange(timesteps) * dt + t_eval1[-1]
+    
+    # # --- DRUGA SIMULACIJA (Nastavak - npr. još 3 dana) ---
+    # # Uzimamo poslednje stanje iz prve simulacije
+    # y0_nastavak = sim_data_1['last_state']
+    # y0_nastavak1 = sim_data_11['last_state']
+    
+    # sim_data_2 = compute_tumbling_dynamics(
+    #     dt, timesteps, y0_nastavak, np.array([I1, I2, I3]), V_INERTIAL_FIXED, BODY_AXIS_TO_TRACK
+    # )
+    
+    # sim_data_22 = tumbling_rotation_1(dt, timesteps, y0_nastavak1, np.array([I1, I2, I3]), V_INERTIAL_FIXED)
+
     # Parametri simulacije
     fps = 30
-    timesteps = 10000
+    
     lat = 60
     long = -90
     theta_deg = 32.8
-    phi_0_deg = 90
-    G_body = [1, 0, 0]
-    P_spin = 0.05
-    P_prec = 1
+    phi_0_deg = 56
+    G_body = [0, 0, 1]
+    P_spin = 1
+    P_prec = 0.3
     n_cycles = 1
     
     print("Computing kinematics (rotations, axes, and hodograph)...")
     
-    # Pozivamo funkciju koja sada vraća rečnik sa svim podacima
-# =============================================================================
-#     sim_data = compute_tumbling_kinematics(
-#         timesteps=timesteps, 
-#         long_deg=long, 
-#         lat_deg=lat, 
-#         theta_deg=theta_deg,
-#         phi_0_deg = phi_0_deg,
-#         G_body = G_body,
-#         P_spin=P_spin, 
-#         P_prec=P_prec, 
-#         n_cycles=n_cycles
-#     )
-# =============================================================================
+
     
-    
-    sim_data = compute_tumbling_dynamics(t_limit, y0, np.array([I1, I2, I3]), V_INERTIAL_FIXED, BODY_AXIS_TO_TRACK, timesteps=timesteps)
-    
-    
+
+
     # Izdvajamo ono što nam treba za animaciju
-    rotations = sim_data['rotations']
-    L_hat = sim_data['L_axis']
-    omega_vecs = sim_data['omega_axes']
+    rotations = sim_data_1['rotations']
+    L_hat = sim_data_1['L_axis']
+    omega_vecs = sim_data_1['omega_axes']
+    r_sun = sim_data_1['r_sun']
+    
+    r_1 = sim_data_11['r_body_fixed']
+    t_1 = sim_data_11['t_body_fixed']
+    
+    
+    long1 = np.zeros(len(r_sun))
+    lat1 = np.zeros(len(r_sun))
+    long11 = np.zeros(len(r_sun))
+    lat11 = np.zeros(len(r_sun))
+    
+    long11_t = np.zeros(len(r_sun))
+    lat11_t = np.zeros(len(r_sun))
+
+    for i in range(len(long1)):
+        long1[i] = np.arctan2(r_sun[i][1], r_sun[i][0])
+        lat1[i] = np.arcsin(r_sun[i][2])
+        
+        long11[i] = np.arctan2(r_1[i][1], r_1[i][0])
+        lat11[i] = np.arcsin(r_1[i][2])
+        
+        long11_t[i] = np.arctan2(t_1[i][1], t_1[i][0])
+        lat11_t[i] = np.arcsin(t_1[i][2])
+        
+        
+        
+        
     
     print(f"Computed {len(rotations)} frames.")
     
-    output_file = "tumbling_animation.gif"
+    output_file = "tumbling_animation_1.gif"
     
     # Pozivamo osveženu funkciju za animaciju
     # Prosleđujemo i L_hat (fiksni) i omega_vecs (promenljivi za hodograf)
@@ -537,6 +836,117 @@ if __name__ == "__main__":
         fps=fps,
         skip_frames=1  # Možeš povećati na 2 ili 3 ako je fajl prevelik
     )
+    
+    
+    # Izdvajamo ono što nam treba za animaciju
+    # rotations = sim_data_2['rotations']
+    # L_hat = sim_data_2['L_axis']
+    # omega_vecs = sim_data_2['omega_axes']
+    # r_sun = sim_data_2['r_sun']
+    
+    # r_2 = sim_data_22['r_body_fixed']
+    # t_2 = sim_data_22['t_body_fixed']
+    # long22 = np.zeros(len(r_sun))
+    # lat22 = np.zeros(len(r_sun))
+    
+    # long2 = np.zeros(len(r_sun))
+    # lat2 = np.zeros(len(r_sun))
+    
+    # long22_t = np.zeros(len(r_sun))
+    # lat22_t = np.zeros(len(r_sun))
+
+    # for i in range(len(long2)):
+    #     long2[i] = np.arctan2(r_sun[i][1], r_sun[i][0])
+    #     lat2[i] = np.arcsin(r_sun[i][2])
+        
+    #     long22[i] = np.arctan2(r_2[i][1], r_2[i][0])
+    #     lat22[i] = np.arcsin(r_2[i][2])
+        
+    #     long22_t[i] = np.arctan2(t_2[i][1], t_2[i][0])
+    #     lat22_t[i] = np.arcsin(t_2[i][2])
+    # print(f"Computed {len(rotations)} frames.")
+    
+    output_file = "tumbling_animation_2.gif"
+    
+    # Pozivamo osveženu funkciju za animaciju
+    # Prosleđujemo i L_hat (fiksni) i omega_vecs (promenljivi za hodograf)
+    animate_rotation(
+        shape_file=shape_file,
+        rotation_matrices=rotations,
+        L_hat=L_hat,
+        omega_vectors=omega_vecs,
+        output_file=output_file,
+        fps=fps,
+        skip_frames=1  # Možeš povećati na 2 ili 3 ako je fajl prevelik
+    )
+    
+   
 
     print(f"Animation saved to {output_file}")
+ 
+# =============================================================================
+# plt.figure()
+# plt.plot(np.rad2deg(long1), np.rad2deg(lat1), 'r')
+# # plt.plot(np.rad2deg(long2), np.rad2deg(lat2), 'g')
+# plt.plot(np.rad2deg(long1[0]), np.rad2deg(lat1[0]), 'or')
+# # plt.plot(np.rad2deg(long2[0]), np.rad2deg(lat2[0]), 'og')
+# 
+# 
+# plt.plot(np.rad2deg(long11), np.rad2deg(lat11), 'sr')
+# # plt.plot(np.rad2deg(long22), np.rad2deg(lat22), 'sg')
+# 
+# 
+# plt.grid()
+# plt.title('long-lat')
+# 
+# plt.figure()
+#     
+# plt.plot(t_eval1, np.rad2deg(long1), 'r')
+# # plt.plot(t_eval2, np.rad2deg(long2), 'g')
+# plt.plot(t_eval1[0], np.rad2deg(long1[0]), 'or')
+# # plt.plot(t_eval2[0], np.rad2deg(long2[0]), 'og')
+# plt.title('vreme-longituda')
+# plt.grid()
+# 
+# plt.figure()
+# plt.plot(t_eval1, np.rad2deg(lat1), 'r')
+# # plt.plot(t_eval2, np.rad2deg(lat2), 'g')
+# plt.plot(t_eval1[0], np.rad2deg(lat1[0]), 'or')
+# # plt.plot(t_eval2[0], np.rad2deg(lat2[0]), 'og')
+# plt.title('vreme-latituda')
+# 
+# 
+# plt.figure()
+# 
+# plt.plot(t_eval1, np.rad2deg(long11), 'r')
+# # plt.plot(t_eval2, np.rad2deg(long22), 'g')
+# 
+# plt.plot(t_eval1, np.rad2deg(long11_t), '--r')
+# plt.plot(t_eval2, np.rad2deg(long22_t), '--g')
+# 
+# plt.title('vreme-longituda')
+# plt.grid()
+# 
+# plt.figure()
+# 
+# plt.plot(t_eval1, np.rad2deg(lat11), 'r')
+# plt.plot(t_eval1, np.rad2deg(lat11_t), '--r')
+# plt.grid()
+# 
+# plt.plot(t_eval2, np.rad2deg(lat22_t), '--g')
+# plt.plot(t_eval2, np.rad2deg(lat22), 'g')
+# 
+# 
+# plt.title('vreme-latituda')
+# plt.grid()
+# 
+# =============================================================================
+    
+# long = np.zeros(len(sim_data_1))
+# lat = np.zeros(len(sim_data_1))
+
+# for i in range(len(sim_data_1)):
+#     long[i] = np.arctan2(sim_data_1[i][1], sim_data_1[i][0])
+#     lat[i] = np.arcsin(sim_data_1[i][2])
+    
     

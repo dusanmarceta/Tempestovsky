@@ -388,7 +388,18 @@ def main():
                 numba_view_factors.append(arr.flatten() if arr.ndim > 1 else arr)
         thermal_data.thermal_view_factors = numba_view_factors
 
+
+
+
+
+
+
+
+    '''
+    insolation used for initialization
     
+    '''
+
     thermal_data = calculate_insolation(thermal_data, shape_model, simulation, config)
     
     # If kernel-based roughness is enabled, process per-timestep sub-facet insolation in vectorized fashion
