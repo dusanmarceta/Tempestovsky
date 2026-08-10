@@ -392,9 +392,7 @@ if __name__ == "__main__":
     psi_start = np.deg2rad(14.0)
     phi_start = np.deg2rad(152.0)
     
-    # Vektori za praćenje
-    V_INERTIAL_FIXED = np.array([1.0, 0.0, 0.0]) # Npr. pravac ka Suncu
-    BODY_AXIS_TO_TRACK = np.array([0.0, 0.0, 1.0]) # Najkraća osa (I3)
+
 
     # Izračunavanje momenta L i početnih w komponenti (mislim da je kriticno proveriti da li je ovo dobro)
     L_fixed = w_phi * ((I1 + I2) / 2) / np.cos(theta_start)
@@ -402,6 +400,11 @@ if __name__ == "__main__":
     w2_0 = (L_fixed * np.sin(theta_start) * np.cos(psi_start)) / I2
     w3_0 = (L_fixed * np.cos(theta_start)) / I3
     y0 = [w1_0, w2_0, w3_0, phi_start, theta_start, psi_start] # pocetni uslovvi 
+    
+    
+    # Vektori za praćenje
+    V_INERTIAL_FIXED = np.array([1.0, 0.0, 0.0]) # Npr. pravac ka Suncu
+    BODY_AXIS_TO_TRACK = np.array([0.0, 0.0, 1.0]) # Najkraća osa (I3)
     
 
     # --- PRVA SIMULACIJA (Prva 3 dana) ---
