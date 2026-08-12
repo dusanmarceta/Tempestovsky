@@ -45,7 +45,7 @@ phi_0:              0           # Initial orientation angle [deg]
 psi_0:              0.0           # Initial spin angle [deg]
 P_phi_h:            9.32444       # Scaled precession parameter (P_rot * I1/I3 = 2.0 * 1.0 / 0.21449)
 P_psi_h:            2.0           # Actual rotation period around fixed z-axis [hours]
-E_ratio:            1.0           # EXACTLY 1.0 -> theta_0 = 0 deg (No precession/tumbling)
+E_ratio:            1           # EXACTLY 1.0 -> theta_0 = 0 deg (No precession/tumbling)
 epoch_jd:           2456284.676388 # Epoch [Julian Date]
 
 

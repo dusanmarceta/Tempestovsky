@@ -349,6 +349,11 @@ def calculate_insolation_orbit_section(thermal_data, shape_model, simulation, co
     
     
     
+    
+    
+    
+    
+    
     for t in range(timesteps_per_orbit_section[orbit_section]):
         total_time += simulation.delta_t
            
