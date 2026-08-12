@@ -20,6 +20,14 @@ from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from scipy.integrate import solve_ivp
 
 
+from utils import (
+    conditional_tqdm,
+    conditional_print,
+    rays_triangles_intersection,
+    calculate_rotation_matrix, sun_direction
+)  
+
+
 import yaml
 
 config_file = '../../data/config/yarko_config_no_precession.yaml'
@@ -31,6 +39,31 @@ shape_file = "../../data/shape_models/Rubber_Duck_1500_facets.stl"
 # 1. UČITAVANJE CONFIG FAJLA
 with open(config_file, "r") as file:
     config = yaml.safe_load(file)
+
+
+
+time_step = 20
+N_steps = 360
+N_rotation = 360
+
+# lambda_L_deg = 0
+# beta_L_deg = 90
+
+
+
+
+# lam = np.deg2rad(lambda_L_deg)
+# bet = np.deg2rad(beta_L_deg)
+
+
+
+sun_old = np.zeros([N_steps, 3])
+sun_tumb = np.zeros([N_steps, 3])
+sun_inverse = np.zeros([N_steps, 3])
+current_sunlight_directions = np.array([1, 0, 0])
+
+sun_A_B = np.zeros([N_steps, 3])
+
 
 
     
@@ -111,6 +144,9 @@ def animate_rotation_inertial(shape_file, rotation_matrices, omega_vectors,
         hodograf_lines[ax_name] = line
 
     vertices_original = vertices.copy()
+    
+    
+
 
     # --- 4. ANIMATION UPDATE FUNKCIJA ---
     def update(frame):
@@ -182,6 +218,8 @@ def animate_rotation_inertial(shape_file, rotation_matrices, omega_vectors,
 
     rotated_vertices = (vertices_original - center) @ R_local @ R_L2Ecl.T + center
     collection.set_verts(rotated_vertices)
+    
+    
 
     osa_1.remove()
     osa_2.remove()
@@ -217,6 +255,7 @@ def compute_tumbling_dynamics(dt, timesteps, y0, I, r_inertial, BODY_AXIS_TO_TRA
     """
     Rešava Eulerove jednačine i vraća rezultate uključujući i fiksni vektor ugaonog momenta L.
     """
+    
     I1, I2, I3 = I
     
     # --- 1. Definisanje dinamike ---
@@ -344,9 +383,22 @@ def compute_tumbling_dynamics(dt, timesteps, y0, I, r_inertial, BODY_AXIS_TO_TRA
 
 
 
+r_inertial = np.array([1, 0, 0])
 
 
 if __name__ == "__main__":
+    
+    
+    
+    
+    
+    rotation_tumbling = np.zeros((N_steps, 3, 3), dtype=np.float64)
+    rotation_inverse = np.zeros((N_steps, 3, 3), dtype=np.float64)
+        
+    
+    
+    
+    
     
     # 2. IZDVAJANJE PARAMETARA I KONVERZIJA U SI JEDINICE
     I1 = float(config["I1"])
@@ -357,6 +409,34 @@ if __name__ == "__main__":
     # Uglovi iz stepeni u radijane
     lambda_L = np.deg2rad(config["lambda_L"])
     beta_L = np.deg2rad(config["beta_L"])
+    
+    
+    
+    Rz = np.array([
+    [np.cos(lambda_L), -np.sin(lambda_L), 0],
+    [np.sin(lambda_L),  np.cos(lambda_L), 0],
+    [0,            0,           1]
+    ])
+
+    Ry = np.array([
+        [np.cos(np.pi/2 - beta_L), 0, np.sin(np.pi/2 - beta_L)],
+        [0,                       1, 0],
+        [-np.sin(np.pi/2 - beta_L), 0, np.cos(np.pi/2 - beta_L)]
+    ])
+    
+    R = Rz @ Ry
+    
+
+    
+    r_new = R.T @ r_inertial
+    
+    
+
+    
+    # lambda_L = lam
+    # beta_L = bet
+    
+    
     phi_0 = np.deg2rad(config["phi_0"])
     psi_0 = np.deg2rad(config["psi_0"])
 
@@ -366,8 +446,26 @@ if __name__ == "__main__":
     E_ratio = float(config["E_ratio"])
     epoch_jd = float(config["epoch_jd"])
     
+    
+    
 
 
+    # # # Jedinični vektori baza L-sistema izraženi u ekliptičkim koordinatama
+    # u_x = np.array([-np.sin(lambda_L), np.cos(lambda_L), 0.0])
+    # u_y = np.array([-np.sin(beta_L) * np.cos(lambda_L), -np.sin(beta_L) * np.sin(lambda_L), np.cos(beta_L)])
+    # u_z = np.array([np.cos(beta_L) * np.cos(lambda_L), np.cos(beta_L) * np.sin(lambda_L), np.sin(beta_L)])
+    
+    
+    # # Jedinični vektori baza L-sistema izraženi u ekliptičkim koordinatama
+    u_y = np.array([-np.sin(lambda_L), np.cos(lambda_L), 0.0])
+    u_x = -np.array([-np.sin(beta_L) * np.cos(lambda_L), -np.sin(beta_L) * np.sin(lambda_L), np.cos(beta_L)])
+    u_z = np.array([np.cos(beta_L) * np.cos(lambda_L), np.cos(beta_L) * np.sin(lambda_L), np.sin(beta_L)])
+    
+
+    # Matrica rotacije: R_L2Ecl * v_local = v_ecliptic
+    R_L2Ecl = np.column_stack((u_x, u_y, u_z))
+    
+    
     A = (np.sin(psi_0) ** 2 / I1) + (np.cos(psi_0) ** 2 / I2)
     sin2_theta0 = (E_ratio - 1.0) / (I3 * A - 1.0)
     theta_0 = np.arcsin(np.sqrt(sin2_theta0))
@@ -384,9 +482,9 @@ if __name__ == "__main__":
 
     y0 = [w1_0, w2_0, w3_0, phi_0, theta_0, psi_0]
     
-    sim = compute_tumbling_dynamics(dt = 100, timesteps = 216, y0 = y0,
+    sim = compute_tumbling_dynamics(dt = time_step, timesteps = N_steps, y0 = y0,
                                         I = np.array([I1, I2, I3]), 
-                                        r_inertial = np.array([1.0, 0.0, 0.0]), 
+                                        r_inertial = r_new, 
                                         BODY_AXIS_TO_TRACK = np.array([1.0, 0.0, 0.0]))
     
     
@@ -399,6 +497,9 @@ if __name__ == "__main__":
     L_hat = sim['L_axis']
     omega_vecs = sim['G_axes']
     r_sun = sim['r_sun']
+    
+    
+    
 
     # Primer pozivanja za prikaz hodografa Z-ose i Omega ose istovremeno:
     animate_rotation_inertial(shape_file = shape_file, 
@@ -425,6 +526,14 @@ if __name__ == "__main__":
     y_inertial = axis_inertial[:, 1]
     z_inertial = axis_inertial[:, 2]
     
+    
+    
+    
+    
+    
+    
+    
+    
     # Longituda i latituda u inercijalnom prostoru
     long = np.rad2deg(np.arctan2(y_body, x_body))
     lat = np.rad2deg(np.arcsin(np.clip(z_body, -1.0, 1.0)))  # clip radi numeričke stabilnosti
@@ -432,3 +541,56 @@ if __name__ == "__main__":
     # Longituda i latituda u inercijalnom prostoru
     long_inertial = np.rad2deg(np.arctan2(y_inertial, x_inertial))
     lat_inertial = np.rad2deg(np.arcsin(np.clip(z_inertial, -1.0, 1.0)))  # clip radi numeričke stabilnosti
+    
+    for i in range(len(rotations)):
+        rotation_tumbling[i] = rotations[i] @ R_L2Ecl.T
+        rotation_inverse[i] = rotation_tumbling[i].T
+        
+        sun_tumb[i] = np.dot((rotation_tumbling[i]).T, current_sunlight_directions) # THIS
+        sun_inverse[i] = np.dot(rotation_inverse[i], current_sunlight_directions) # THIS
+        
+
+
+t = 0
+rotation_old = np.zeros((N_steps, 3, 3), dtype=np.float64)
+rotation_axis = np.array([np.cos(lambda_L) * np.cos(beta_L), np.sin(lambda_L) * np.cos(beta_L), np.sin(beta_L)])
+for i in range(N_steps):
+    
+    rotation_matrix = calculate_rotation_matrix(rotation_axis, 
+                                             (2 * np.pi / N_rotation) * i)
+    
+
+    rotation_old[i] = rotation_matrix
+    
+    sun_old[i] = np.dot(rotation_matrix.T, current_sunlight_directions) # THIS
+    
+    
+    # sun_A_B[i] = rotation_matrix.T @ R @ np.array([x_inertial[i], y_inertial[i], z_inertial[i]])
+    sun_A_B[i] = R @ np.array([x_inertial[i], y_inertial[i], z_inertial[i]])
+    
+    
+sun_long_old = np.rad2deg(np.arctan2(sun_old.T[1], sun_old.T[2]))
+sun_lat_old = np.rad2deg(np.arcsin(sun_old.T[0]))
+
+
+sun_long_tumb = np.rad2deg(np.arctan2(sun_tumb.T[1], sun_tumb.T[0]))
+sun_lat_tumb = np.rad2deg(np.arcsin(sun_tumb.T[2]))
+
+sun_long_inverse = np.rad2deg(np.arctan2(sun_inverse.T[1], sun_inverse.T[0]))
+sun_lat_inverse = np.rad2deg(np.arcsin(sun_inverse.T[2]))
+
+plt.figure()
+plt.plot(time, sun_old.T[0])
+plt.plot(time, sun_A_B.T[0])
+
+plt.figure()
+plt.plot(time, sun_old.T[1])
+plt.plot(time, sun_A_B.T[1])
+
+plt.figure()
+plt.plot(time, sun_old.T[2])
+plt.plot(time, sun_A_B.T[2])
+
+
+
+

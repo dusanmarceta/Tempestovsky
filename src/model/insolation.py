@@ -57,8 +57,7 @@ def calculate_insolation(thermal_data, shape_model, simulation, config):
     # Precompute rotation matrices and rotated sunlight directions
     rotation_matrices = np.zeros((number_of_time_steps, 3, 3), dtype=np.float64)
     rotated_sunlight_directions = np.zeros((number_of_time_steps, 3), dtype=np.float64)
-    
-    
+
 
     for t in range(number_of_time_steps):
         rotation_matrix = calculate_rotation_matrix(simulation.rotation_axis, 
@@ -353,18 +352,18 @@ def calculate_insolation_orbit_section(thermal_data, shape_model, simulation, co
     for t in range(timesteps_per_orbit_section[orbit_section]):
         total_time += simulation.delta_t
            
-        current_sunlight_directions[t], current_sun_distance[t], true_anomaly[t] = sun_direction(total_time, simulation)
+        current_sunlight_directions[t], current_sun_distance[t], true_anomaly[t] = sun_direction(total_time, simulation) # this is OK
         
-        current_transfersal_direction = np.cross(current_sunlight_directions[t], np.array([0, 0, 1]))
+        current_transfersal_direction = np.cross(current_sunlight_directions[t], np.array([0, 0, 1])) # this is OK
         
         rotation_matrix = calculate_rotation_matrix(simulation.rotation_axis, 
-                                                 (2 * np.pi / simulation.timesteps_per_day) * (np.sum(timesteps_per_orbit_section[:orbit_section]) + t))
+                                                 (2 * np.pi / simulation.timesteps_per_day) * (np.sum(timesteps_per_orbit_section[:orbit_section]) + t)) # THIS
  
         rotation_matrices[t] = rotation_matrix
-        rotated_sunlight_directions[t] = np.dot(rotation_matrix.T, current_sunlight_directions[t])
+        rotated_sunlight_directions[t] = np.dot(rotation_matrix.T, current_sunlight_directions[t]) # THIS
         rotated_sunlight_directions[t] /= np.linalg.norm(rotated_sunlight_directions[t])
         
-        rotated_transfersal_directions[t] = np.dot(rotation_matrix.T, current_transfersal_direction)
+        rotated_transfersal_directions[t] = np.dot(rotation_matrix.T, current_transfersal_direction) # THIS
      
     # Create chunks for parallel processing
     n_facets = len(shape_model)
@@ -395,8 +394,8 @@ def calculate_insolation_orbit_section(thermal_data, shape_model, simulation, co
              if start_idx == 0 else None) or normals[start_idx:end_idx].astype(np.float64),
             positions[start_idx:end_idx].astype(np.float64),
             np.array(visible_facets_arrays[start_idx:end_idx], dtype=object),
-            rotation_matrices.astype(np.float64),
-            rotated_sunlight_directions.astype(np.float64),
+            rotation_matrices.astype(np.float64), # THIS
+            rotated_sunlight_directions.astype(np.float64), #THIS
             simulation.albedo,
             current_sun_distance.astype(np.float64),
             current_sunlight_directions.astype(np.float64),

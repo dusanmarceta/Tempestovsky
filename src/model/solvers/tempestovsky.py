@@ -234,7 +234,9 @@ class YarkovskySolver(TemperatureSolver):
         
         # Initialization
 
-        while day < simulation.max_days and (day < simulation.min_days or convergence_error > simulation.convergence_target):
+
+        # unikuta dnevna inicijacija
+        while day <= simulation.max_days and (day < simulation.min_days or convergence_error > simulation.convergence_target):
             current_day_temperature = calculate_temperatures(
                 thermal_data.temperatures,
                 thermal_data.layer_temperatures,

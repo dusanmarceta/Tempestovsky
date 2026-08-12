@@ -26,7 +26,7 @@ thicknes_0:             0.1          #
 n_layers:               480          # 
 convergence_method:     "mean"      # Method to determine convergence: 'mean' or 'max' temperature difference between days
 convergence_target:     0.1         # Target temperature difference between days for convergence in K. Higher values will converge faster.
-max_days:               1          # Maximum number of days to run simulation
+max_days:               0          # Maximum number of days to run simulation
 min_days:               0           # Minimum number of days to run simulation
 
 # Orbital and rotational parameters
