@@ -359,6 +359,7 @@ class YarkovskySolver(TemperatureSolver):
         
         counter = 0
         thermal_data.layer_temperatures = thermal_data.layer_temperatures[:, 1, :]
+        last_state = 0
         
         if simulation.orbital_initialisation > 0:
             
@@ -373,11 +374,21 @@ class YarkovskySolver(TemperatureSolver):
 #            mean_insolation = np.zeros(np.sum(timesteps_per_orbit_section))
 #            true_anomaly_orbit = np.zeros(np.sum(timesteps_per_orbit_section))
 #            r_sun = np.zeros(np.sum(timesteps_per_orbit_section))
-        
+            
             for orbit_section in range(number_of_initial_sections):
                 
-                precomputed_insolation, true_anomaly, current_sun_distance, r_rad, r_trans = calculate_insolation_orbit_section(thermal_data, shape_model, simulation, config, timesteps_per_orbit_section, orbit_section, initialisation = 1)
+                if orbit_section == 0:
+                    initial_rotation_state = simulation.y0
+                else:
+                    initial_rotation_state = last_state
+                    
+                
+                
+                precomputed_insolation, true_anomaly, current_sun_distance, r_rad, r_trans, last_state = calculate_insolation_orbit_section(thermal_data, shape_model, simulation, config, timesteps_per_orbit_section, orbit_section, initial_rotation_state = initial_rotation_state, initialisation = 1)
     
+    
+                print(f'last state = {initial_rotation_state}')
+                
                 for t in range(timesteps_per_orbit_section[orbit_section]):
         
     

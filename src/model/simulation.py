@@ -44,6 +44,9 @@ class Simulation:
         
         self.timesteps_per_orbit = int(np.ceil(self.orbital_period / self.delta_t))
         
+        
+        
+        
 
         
 #        self.timesteps_per_orbit = int(np.ceil(self.orbital_period / self.delta_t))
@@ -58,6 +61,41 @@ class Simulation:
     
         self.orbital_period = 2*np.pi / np.sqrt(const.GM_sun.value /(self.a_au * const.au.value)**3)
         self.timesteps_per_year = int(np.ceil(self.orbital_period / self.delta_t))
+        
+        
+        
+        # 2. IZDVAJANJE PARAMETARA I KONVERZIJA U SI JEDINICE
+        self.I = (self.I1, self.I2, self.I3)
+
+        # Uglovi iz stepeni u radijane
+
+        phi_0 = np.deg2rad(self.phi_0)
+        psi_0 = np.deg2rad(self.psi_0)
+
+        # Periodi, energija i epoha
+
+
+           
+        A = (np.sin(psi_0) ** 2 / self.I1) + (np.cos(psi_0) ** 2 / self.I2)
+        sin2_theta0 = (self.E_ratio - 1.0) / (self.I3 * A - 1.0)
+        theta_0 = np.arcsin(np.sqrt(sin2_theta0))
+
+        # 4. PRORAČUN UGAONIH BRZINA I VEKTORA POČETNOG STANJA y0
+        w_phi = (2 * np.pi) / (self.P_phi_h * 3600.0)
+
+        # UNIVERZALNO: Deljenje sa A radi i za I1 != I2 i za I1 == I2
+        L_mag = w_phi / A
+
+        w1_0 = (L_mag * np.sin(theta_0) * np.sin(psi_0)) / self.I1
+        w2_0 = (L_mag * np.sin(theta_0) * np.cos(psi_0)) / self.I2
+        w3_0 = (L_mag * np.cos(theta_0)) / self.I3
+
+        self.y0 = [w1_0, w2_0, w3_0, phi_0, theta_0, psi_0]
+        
+        
+        
+        
+        
         
 
     def calculate_adaptive_timesteps(self):

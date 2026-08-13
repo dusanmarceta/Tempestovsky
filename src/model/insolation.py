@@ -18,6 +18,9 @@ from src.utilities.utils import (
 )   
 from src.model.scattering import BRDFLookupTable
 from src.utilities.tumbling_matrices import tumbling_rotation
+
+from src.utilities.tumbling_final_1 import compute_tumbling_dynamics
+
 from tqdm import tqdm
 import astropy.constants as const
 
@@ -321,7 +324,7 @@ def calculate_insolation_whole_orbit(thermal_data, shape_model, simulation, conf
 
 
 
-def calculate_insolation_orbit_section(thermal_data, shape_model, simulation, config, timesteps_per_orbit_section, orbit_section, initialisation):
+def calculate_insolation_orbit_section(thermal_data, shape_model, simulation, config, timesteps_per_orbit_section, orbit_section, initial_rotation_state, initialisation):
     ''' 
     This function calculates the insolation for each facet of the body. It calculates the angle between the sun and each facet, and then calculates the insolation for each facet factoring in shadows. It writes the insolation to the data cube.
 
@@ -350,7 +353,9 @@ def calculate_insolation_orbit_section(thermal_data, shape_model, simulation, co
     
     
     
-    
+        
+    last_state = 1
+        
     
     
     
@@ -369,6 +374,17 @@ def calculate_insolation_orbit_section(thermal_data, shape_model, simulation, co
         rotated_sunlight_directions[t] /= np.linalg.norm(rotated_sunlight_directions[t])
         
         rotated_transfersal_directions[t] = np.dot(rotation_matrix.T, current_transfersal_direction) # THIS
+        
+        
+    rotation = compute_tumbling_dynamics(dt = simulation.delta_t, timesteps = timesteps_per_orbit_section[orbit_section], 
+                                         y0 = initial_rotation_state,
+                                         I = simulation.I, 
+                                         r_inertial = current_sunlight_directions,
+                                         lambda_L_deg = simulation.lambda_L,
+                                         beta_L_deg = simulation.beta_L
+                                         )
+    
+    last_state = rotation['last_state']
      
     # Create chunks for parallel processing
     n_facets = len(shape_model)
@@ -418,9 +434,14 @@ def calculate_insolation_orbit_section(thermal_data, shape_model, simulation, co
         insol_array[start_idx:end_idx] = results[chunk_idx]
         
         
-    return insol_array, true_anomaly, current_sun_distance/const.au.value, -rotated_sunlight_directions, -rotated_transfersal_directions
-
-
+    return (
+        insol_array,
+        true_anomaly,
+        current_sun_distance / const.au.value,
+        -rotated_sunlight_directions,
+        -rotated_transfersal_directions,
+        last_state
+    )
 
 def calculate_insolation_orbit_section_tumbling(thermal_data, shape_model, simulation, config, timesteps_per_orbit_section, orbit_section, initialisation):
     ''' 
