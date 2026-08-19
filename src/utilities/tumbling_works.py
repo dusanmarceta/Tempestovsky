@@ -501,16 +501,16 @@ if __name__ == "__main__":
     
     
 
-    # Primer pozivanja za prikaz hodografa Z-ose i Omega ose istovremeno:
-    animate_rotation_inertial(shape_file = shape_file, 
-                              rotation_matrices = rotations, 
-                              omega_vectors = omega_vecs, 
-                              lambda_L_deg = np.rad2deg(lambda_L), beta_L_deg = np.rad2deg(beta_L),
-                              output_file = output_file, 
-                              fps = fps, 
-                              skip_frames = 1, 
-                              hodograf_axis = 'z'
-                              )
+    # # Primer pozivanja za prikaz hodografa Z-ose i Omega ose istovremeno:
+    # animate_rotation_inertial(shape_file = shape_file, 
+    #                           rotation_matrices = rotations, 
+    #                           omega_vectors = omega_vecs, 
+    #                           lambda_L_deg = np.rad2deg(lambda_L), beta_L_deg = np.rad2deg(beta_L),
+    #                           output_file = output_file, 
+    #                           fps = fps, 
+    #                           skip_frames = 1, 
+    #                           hodograf_axis = 'z'
+    #                           )
     
     # # Vreme u sekundama ili satima radi grafika
     time = sim['time']

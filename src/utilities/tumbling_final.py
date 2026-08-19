@@ -378,7 +378,6 @@ def compute_tumbling_dynamics(dt, timesteps, y0, I, r_inertial, lambda_L_deg, be
 
 
 
-r_inertial = np.array([1, 0, 0])
 
 
 if __name__ == "__main__":
@@ -420,6 +419,7 @@ if __name__ == "__main__":
     w3_0 = (L_mag * np.cos(theta_0)) / I3
 
     y0 = [w1_0, w2_0, w3_0, phi_0, theta_0, psi_0]
+    r_inertial = np.tile([1, 0, 0], (N_steps, 1))
     
     sim = compute_tumbling_dynamics(dt = time_step, timesteps = N_steps, y0 = y0,
                                         I = np.array([I1, I2, I3]), 

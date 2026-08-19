@@ -8,6 +8,9 @@ from src.model.insolation import calculate_insolation, calculate_insolation_whol
 from src.model.simulation import ThermalData_propagation
 import astropy.constants as const
 import time
+import os
+
+from src.utilities.tumbling_final_2 import compute_tumbling_dynamics
 
 # Standalone numba functions
 @jit(nopython=True)
@@ -349,7 +352,7 @@ class YarkovskySolver(TemperatureSolver):
         '''
         this must be input parameter
         '''
-        number_of_orbit_sections = 500
+        number_of_orbit_sections = 1550
         
         
         
@@ -374,11 +377,28 @@ class YarkovskySolver(TemperatureSolver):
 #            mean_insolation = np.zeros(np.sum(timesteps_per_orbit_section))
 #            true_anomaly_orbit = np.zeros(np.sum(timesteps_per_orbit_section))
 #            r_sun = np.zeros(np.sum(timesteps_per_orbit_section))
+
+
+            '''
+            ovde treba da se izvrti u nazad da bi se dobilo inicijalno stanje
             
+            
+            
+            
+            '''
+
+            reverse_rotation = compute_tumbling_dynamics(dt = -simulation.delta_t, timesteps = np.sum(timesteps_per_orbit_section), 
+                                                 y0 = simulation.y0,
+                                                 I = simulation.I, 
+                                                 r_inertial = np.tile(np.array([1, 0, 0]), (np.sum(timesteps_per_orbit_section), 1)), # doesn't matter
+                                                 lambda_L_deg = simulation.lambda_L,
+                                                 beta_L_deg = simulation.beta_L
+                                                 )
+         
             for orbit_section in range(number_of_initial_sections):
                 
                 if orbit_section == 0:
-                    initial_rotation_state = simulation.y0
+                    initial_rotation_state = reverse_rotation['last_state']
                 else:
                     initial_rotation_state = last_state
                     
@@ -387,7 +407,9 @@ class YarkovskySolver(TemperatureSolver):
                 precomputed_insolation, true_anomaly, current_sun_distance, r_rad, r_trans, last_state = calculate_insolation_orbit_section(thermal_data, shape_model, simulation, config, timesteps_per_orbit_section, orbit_section, initial_rotation_state = initial_rotation_state, initialisation = 1)
     
     
-                print(f'last state = {initial_rotation_state}')
+                # print(f'initial insolation = {np.mean(precomputed_insolation)}')
+    
+                # print(f'last state = {initial_rotation_state}')
                 
                 for t in range(timesteps_per_orbit_section[orbit_section]):
         
@@ -474,15 +496,54 @@ class YarkovskySolver(TemperatureSolver):
         
         
         counter = 0
+        os.makedirs("output", exist_ok=True)
+
 #        thermal_data.layer_temperatures = thermal_data.layer_temperatures[:, 1, :]
         for orbit_section in range(number_of_orbit_sections):
             
-            precomputed_insolation, true_anomaly, current_sun_distance, r_rad, r_trans = calculate_insolation_orbit_section(thermal_data, shape_model, simulation, config, timesteps_per_orbit_section, orbit_section, initialisation = 0)
-
+            (
+                precomputed_insolation,
+                true_anomaly,
+                current_sun_distance,
+                r_rad,
+                r_trans,
+                last_state
+            ) = calculate_insolation_orbit_section(
+                thermal_data,
+                shape_model,
+                simulation,
+                config,
+                timesteps_per_orbit_section,
+                orbit_section,
+                initial_rotation_state=initial_rotation_state,
+                initialisation=0
+            )
         
-    #        np.savetxt('test/ekvator_10000.txt', precomputed_insolation[idx_equator])
-    #        np.savetxt('test/pol_10000.txt', precomputed_insolation[idx_pole])
-    # 
+            # Dodavanje rezultata na kraj fajlova
+            with open(f"output/precomputed_insolation_{simulation.version}.npy", "ab") as f:
+                np.save(f, precomputed_insolation)
+        
+            with open(f"output/true_anomaly_{simulation.version}.npy", "ab") as f:
+                np.save(f, true_anomaly)
+        
+            with open(f"output/current_sun_distance_{simulation.version}.npy", "ab") as f:
+                np.save(f, current_sun_distance)
+        
+            with open(f"output/r_rad_{simulation.version}.npy", "ab") as f:
+                np.save(f, r_rad)
+        
+            with open(f"output/r_trans_{simulation.version}.npy", "ab") as f:
+                np.save(f, r_trans)
+        
+            with open(f"output/last_state_{simulation.version}.npy", "ab") as f:
+                np.save(f, last_state)
+                
+                
+            print(timesteps_per_orbit_section[0])
+                
+            if orbit_section == 5:
+
+                raise SystemExit
         
             for t in range(timesteps_per_orbit_section[orbit_section]):
     

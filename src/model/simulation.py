@@ -30,7 +30,7 @@ class Simulation:
         # -----------------------------------------------------------------
         # Initialization calculations based on the loaded parameters
 #        self.solar_distance_m = self.solar_distance_au * 1.496e11  # Convert AU to meters
-        self.rotation_period_s = self.rotation_period_hours * 3600  # Convert hours to seconds
+        self.rotation_period_s = self.P_psi_h * 3600  # Convert hours to seconds
         self.angular_velocity = (2 * np.pi) / self.rotation_period_s
         self.thermal_conductivity = (self.thermal_inertia**2 / (self.density * self.specific_heat_capacity))
         self.skin_depth = (self.thermal_conductivity / (self.density * self.specific_heat_capacity * self.angular_velocity)) ** 0.5
@@ -52,8 +52,8 @@ class Simulation:
 #        self.timesteps_per_orbit = int(np.ceil(self.orbital_period / self.delta_t))
         
         # Compute unit vector from RA and Dec
-        ra_radians = np.radians(self.ra_degrees)
-        dec_radians = np.radians(self.dec_degrees)
+        ra_radians = np.radians(self.lambda_L)
+        dec_radians = np.radians(self.beta_L)
         
         self.rotation_axis = np.array([np.cos(ra_radians) * np.cos(dec_radians), 
                                        np.sin(ra_radians) * np.cos(dec_radians), 
@@ -70,7 +70,7 @@ class Simulation:
         # Uglovi iz stepeni u radijane
 
         phi_0 = np.deg2rad(self.phi_0)
-        psi_0 = np.deg2rad(self.psi_0)
+        psi_0 = np.deg2rad(self.psi_0 + 180)
 
         # Periodi, energija i epoha
 
