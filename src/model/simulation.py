@@ -70,7 +70,7 @@ class Simulation:
         # Uglovi iz stepeni u radijane
 
         phi_0 = np.deg2rad(self.phi_0)
-        psi_0 = np.deg2rad(self.psi_0 + 180)
+        psi_0 = np.deg2rad(self.psi_0)
 
         # Periodi, energija i epoha
 
@@ -91,6 +91,9 @@ class Simulation:
         w3_0 = (L_mag * np.cos(theta_0)) / self.I3
 
         self.y0 = [w1_0, w2_0, w3_0, phi_0, theta_0, psi_0]
+        
+        
+        
         
         
         

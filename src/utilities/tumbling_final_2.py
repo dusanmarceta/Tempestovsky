@@ -31,7 +31,7 @@ from scipy.integrate import solve_ivp
 
 
 
-def compute_tumbling_dynamics(dt, timesteps, y0, I, r_inertial, lambda_L_deg, beta_L_deg):
+def compute_tumbling_dynamics(dt, timesteps, y0, I, r_inertial, lambda_L_deg, beta_L_deg, initialisation):
     """
     Rešava Eulerove jednačine i vraća rezultate uključujući i fiksni vektor ugaonog momenta L.
     """
@@ -88,7 +88,10 @@ def compute_tumbling_dynamics(dt, timesteps, y0, I, r_inertial, lambda_L_deg, be
         return [dw1, dw2, dw3, dphi, dtheta, dpsi]
 
     # --- 2. Integracija ---
-    t_eval = np.arange(timesteps) * dt
+    
+    t_eval = np.arange(1, timesteps + 1) * dt
+    
+       
     sol = solve_ivp(dynamics, (0, t_eval[-1]), y0, t_eval=t_eval, 
                     method='DOP853', rtol=1e-11, atol=1e-13)
     
@@ -135,7 +138,9 @@ def compute_tumbling_dynamics(dt, timesteps, y0, I, r_inertial, lambda_L_deg, be
             [ sj*si,            -sj*ci,            cj]
         ])
         
-        rotations.append(Ri)
+        
+        # rotations.append(R_rotation @ Ri @ R_rotation.T)
+        rotations.append(R_rotation @ Ri.T @ R_rotation.T)
         r_body.append(Ri @ r_inertial[i])
         t_body.append(Ri @ t_inertial[i])
         
@@ -147,10 +152,11 @@ def compute_tumbling_dynamics(dt, timesteps, y0, I, r_inertial, lambda_L_deg, be
         # r_body_rotated.append(Ri @ t_inertial[i])
     # --- NOVI DEO: Čuvanje poslednjeg stanja ---
     # sol.y[:,-1] uzima sve promenljive (w1, w2, w3, phi, theta, psi) iz poslednjeg vremenskog koraka
-    last_state = sol.y[:, -1].tolist() 
+    last_state = sol.y[:, -1].tolist()
 
     # ... (tvoj postojeći kod za transformacije kroz vreme) ...
 
+    
 
     r_body = np.stack(r_body)
     t_body = np.stack(t_body)
@@ -173,14 +179,39 @@ def compute_tumbling_dynamics(dt, timesteps, y0, I, r_inertial, lambda_L_deg, be
     }
     
 
+# time_step = 0.1265
+# N_steps = 100000
+# y0 = [np.float64(-0.0), np.float64(-0.0), np.float64(0.0008726650031629793), np.float64(0.0), np.float64(-0.0), np.float64(0.0)]
+
+# I1 = 1
+# I2 = 1
+# I3 = 0.3
+# r_inertial = np.tile(np.array([1, 0, 0]), (N_steps, 1))
+# lambda_L = 60
+# beta_L = 38
 
 
-# sim = compute_tumbling_dynamics(dt = time_step, timesteps = N_steps, y0 = y0,
+# sim_napred = compute_tumbling_dynamics(dt = time_step, timesteps = N_steps, y0 = y0,
 #                                     I = np.array([I1, I2, I3]), 
 #                                     r_inertial = r_inertial,
 #                                     lambda_L_deg = lambda_L,
 #                                     beta_L_deg = beta_L
 #                                     )
+
+
+# y0 = sim_napred['last_state']
+
+# print(y0)
+
+
+# sim_nazad = compute_tumbling_dynamics(dt = -time_step, timesteps = N_steps, y0 = y0,
+#                                     I = np.array([I1, I2, I3]), 
+#                                     r_inertial = r_inertial,
+#                                     lambda_L_deg = lambda_L,
+#                                     beta_L_deg = beta_L
+#                                     )
+
+# print(sim_nazad['last_state'])
 
 
 

@@ -313,7 +313,10 @@ def calculate_insolation_orbit_section(thermal_data, shape_model, simulation, co
     
     # Precompute rotation matrices and rotated sunlight directions
     if initialisation == 1:
-        total_time = np.sum(timesteps_per_orbit_section[:orbit_section]) * simulation.delta_t - simulation.orbital_period * simulation.orbital_initialisation
+        total_time = np.sum(timesteps_per_orbit_section[:orbit_section]) * simulation.delta_t - simulation.total_initialisation_time
+        
+        
+        
     else:
         total_time = np.sum(timesteps_per_orbit_section[:orbit_section]) * simulation.delta_t
     
@@ -328,10 +331,11 @@ def calculate_insolation_orbit_section(thermal_data, shape_model, simulation, co
     current_sun_distance = np.zeros(timesteps_per_orbit_section[orbit_section])
     true_anomaly = np.zeros(timesteps_per_orbit_section[orbit_section])
     
+    # print('///////////////////////////////////////////////////////////////////')
     
-
+   
     
-    
+    # print(f'POCETAK: inicijalizacija = {initialisation}, vreme = {total_time}')
     
     for t in range(timesteps_per_orbit_section[orbit_section]):
         total_time += simulation.delta_t
@@ -349,20 +353,67 @@ def calculate_insolation_orbit_section(thermal_data, shape_model, simulation, co
         
         rotated_transfersal_directions[t] = np.dot(rotation_matrix.T, current_transfersal_direction) # THIS
         
+    # print(f'KRAJ: inicijalizacija = {initialisation}, vreme = {total_time}')
     last_state = 0
+    
+    
+    
+    total_tumbling_time = simulation.total_initialisation_time - np.sum(timesteps_per_orbit_section[:orbit_section]) * simulation.delta_t
     if simulation.version == 'new':
+        
+
+        
+        
+        
+        
+        
         rotation = compute_tumbling_dynamics(dt = simulation.delta_t, timesteps = timesteps_per_orbit_section[orbit_section], 
                                              y0 = initial_rotation_state,
                                              I = simulation.I, 
                                              r_inertial = current_sunlight_directions,
                                              lambda_L_deg = simulation.lambda_L,
-                                             beta_L_deg = simulation.beta_L
+                                             beta_L_deg = simulation.beta_L, 
+                                             initialisation = initialisation
                                              )
+        
+        
+        
+        
+        
+        
+        total_tumbling_time -= timesteps_per_orbit_section[orbit_section] * simulation.delta_t
+        
+        # print('---------------------------- TUMBLING TIME ---------------------------')
+        # print(total_tumbling_time)
         
         last_state = rotation['last_state']
         rotated_sunlight_directions = rotation['r_body']
         rotated_transfersal_directions = rotation['t_body']
         rotation_matrices = rotation['rotations']
+        
+        
+        # Dodavanje rezultata na kraj fajlova
+    # with open(f"output/rotation_matrices_{simulation.version}.npy", "ab") as f:
+    #     np.save(f, rotation_matrices)
+        
+        # if initialisation == 1:
+            
+            
+            
+            
+        #     remaining_steps = int(total_tumbling_time / simulation.delta_t)
+        
+        #     print('--------------------- PROVERA ROTACIJE ---------------')
+        #     forward_rotation = compute_tumbling_dynamics(dt = simulation.delta_t, timesteps = remaining_steps, 
+        #                                          y0 = last_state,
+        #                                          I = simulation.I, 
+        #                                          r_inertial = np.tile(np.array([1, 0, 0]), (remaining_steps, 1)),
+        #                                          lambda_L_deg = simulation.lambda_L,
+        #                                          beta_L_deg = simulation.beta_L
+        #                                          )
+            
+        #     print(forward_rotation['last_state'])
+        #     print(f'broj ')
      
     # Create chunks for parallel processing
     n_facets = len(shape_model)

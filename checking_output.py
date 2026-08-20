@@ -1,7 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-import numpy as np
 
 
 def load_multiple_npy(filename):
@@ -184,6 +183,8 @@ lat_t_new = np.rad2deg(
 mean_insol_old = precomputed_insolation_old.mean(axis=1)
 mean_insol_new = precomputed_insolation_new.mean(axis=1)
 
+step = 1479
+
 
 plt.figure()
 plt.title('x RAD (temepstovsky)', fontsize = 24)
@@ -220,14 +221,20 @@ plt.grid()
 plt.figure()
 plt.title('y TRANS (temepstovsky)', fontsize = 24)
 plt.plot(r_trans_old[:, 1], label = 'old')
-plt.plot(r_trans_new[:, 1], label = 'new')
+plt.plot(r_trans_new[:, 1],  label = 'new')
 plt.legend()
 plt.grid()
 
 plt.figure()
 plt.title('z TRANS (temepstovsky)', fontsize = 24)
 plt.plot(r_trans_old[:, 2], label = 'old')
-plt.plot(r_trans_new[:, 2], label = 'new')
+plt.plot(r_trans_new[:, 2], 'o', label='new')
+
+idx_red = np.arange(0, len(r_trans_new), step)
+idx_square = np.arange(step - 1, len(r_trans_new), step)
+
+plt.plot(idx_red, r_trans_new[idx_red, 2], 'ro')
+plt.plot(idx_square, r_trans_new[idx_square, 2], 's')
 plt.legend()
 plt.grid()
 

@@ -352,7 +352,7 @@ class YarkovskySolver(TemperatureSolver):
         '''
         this must be input parameter
         '''
-        number_of_orbit_sections = 1550
+        number_of_orbit_sections = 100
         
         
         
@@ -366,11 +366,20 @@ class YarkovskySolver(TemperatureSolver):
         
         if simulation.orbital_initialisation > 0:
             
-            number_of_rotations = np.floor(simulation.orbital_period * simulation.orbital_initialisation/simulation.rotation_period_s)
-            simulation.orbital_initialisation = number_of_rotations * simulation.rotation_period_s / simulation.orbital_period
-            number_of_initial_sections = int(np.ceil(number_of_orbit_sections * simulation.orbital_initialisation))
+            number_of_rotations = np.floor(simulation.orbital_period * simulation.orbital_initialisation/simulation.rotation_period_s) # OK
+            
+            total_number_of_initial_timesteps = (number_of_rotations * simulation.timesteps_per_day).astype(int)
+            
+            simulation.orbital_initialisation = number_of_rotations * simulation.rotation_period_s / simulation.orbital_period # OK
+            number_of_initial_sections = int(np.ceil(number_of_orbit_sections * simulation.orbital_initialisation)) # OK
             timesteps_per_orbit_section = (np.ones(number_of_initial_sections) * np.floor(simulation.timesteps_per_orbit/number_of_initial_sections * simulation.orbital_initialisation)).astype(int)
-            timesteps_per_orbit_section[-1] = np.ceil(simulation.timesteps_per_orbit * simulation.orbital_initialisation) - sum(timesteps_per_orbit_section[:-1]) - 1
+            # timesteps_per_orbit_section[-1] = np.ceil(simulation.timesteps_per_orbit * simulation.orbital_initialisation) - sum(timesteps_per_orbit_section[:-1]) - 1
+            
+
+            timesteps_per_orbit_section[-1] = total_number_of_initial_timesteps - sum(timesteps_per_orbit_section[:-1])
+            
+            
+            simulation.total_initialisation_time = (total_number_of_initial_timesteps) * simulation.delta_t
 
 #            surface_history = np.zeros([len(areas), np.sum(timesteps_per_orbit_section)])
 #            mean_T = np.zeros(np.sum(timesteps_per_orbit_section))
@@ -386,18 +395,25 @@ class YarkovskySolver(TemperatureSolver):
             
             
             '''
+            
+            # print('broj koraka')
+            # print(timesteps_per_orbit_section)
 
-            reverse_rotation = compute_tumbling_dynamics(dt = -simulation.delta_t, timesteps = np.sum(timesteps_per_orbit_section), 
-                                                 y0 = simulation.y0,
-                                                 I = simulation.I, 
-                                                 r_inertial = np.tile(np.array([1, 0, 0]), (np.sum(timesteps_per_orbit_section), 1)), # doesn't matter
-                                                 lambda_L_deg = simulation.lambda_L,
-                                                 beta_L_deg = simulation.beta_L
-                                                 )
+
+            
          
             for orbit_section in range(number_of_initial_sections):
                 
                 if orbit_section == 0:
+                    
+                    reverse_rotation = compute_tumbling_dynamics(dt = -simulation.delta_t, timesteps = total_number_of_initial_timesteps, 
+                                                         y0 = simulation.y0,
+                                                         I = simulation.I, 
+                                                         r_inertial = np.tile(np.array([1, 0, 0]), (total_number_of_initial_timesteps, 1)), # doesn't matter
+                                                         lambda_L_deg = simulation.lambda_L,
+                                                         beta_L_deg = simulation.beta_L,
+                                                         initialisation = 1
+                                                         )
                     initial_rotation_state = reverse_rotation['last_state']
                 else:
                     initial_rotation_state = last_state
@@ -494,9 +510,20 @@ class YarkovskySolver(TemperatureSolver):
         timesteps_per_orbit_section = (np.ones(number_of_orbit_sections) * simulation.timesteps_per_orbit/number_of_orbit_sections).astype(int)
         timesteps_per_orbit_section[-1] = simulation.timesteps_per_orbit - sum(timesteps_per_orbit_section[:-1])
         
+        # if simulation.version == 'new':
+        #     timesteps_per_orbit_section[-1] = simulation.timesteps_per_orbit - sum(timesteps_per_orbit_section[:-1]) + 100
+        
         
         counter = 0
         os.makedirs("output", exist_ok=True)
+        print('-----------------------  INITIAL STATE -------------------------')
+        print(f'before initialization, initial state: {simulation.y0}')
+        print(f'after initialization, initial state: {initial_rotation_state}')
+        print(f'after initialization, last state: {last_state}')
+        
+        
+        
+        last_state = simulation.y0
 
 #        thermal_data.layer_temperatures = thermal_data.layer_temperatures[:, 1, :]
         for orbit_section in range(number_of_orbit_sections):
@@ -515,35 +542,35 @@ class YarkovskySolver(TemperatureSolver):
                 config,
                 timesteps_per_orbit_section,
                 orbit_section,
-                initial_rotation_state=initial_rotation_state,
+                initial_rotation_state = last_state,
                 initialisation=0
             )
         
-            # Dodavanje rezultata na kraj fajlova
-            with open(f"output/precomputed_insolation_{simulation.version}.npy", "ab") as f:
-                np.save(f, precomputed_insolation)
+            # # Dodavanje rezultata na kraj fajlova
+            # with open(f"output/precomputed_insolation_{simulation.version}.npy", "ab") as f:
+            #     np.save(f, precomputed_insolation)
         
-            with open(f"output/true_anomaly_{simulation.version}.npy", "ab") as f:
-                np.save(f, true_anomaly)
+            # with open(f"output/true_anomaly_{simulation.version}.npy", "ab") as f:
+            #     np.save(f, true_anomaly)
         
-            with open(f"output/current_sun_distance_{simulation.version}.npy", "ab") as f:
-                np.save(f, current_sun_distance)
+            # with open(f"output/current_sun_distance_{simulation.version}.npy", "ab") as f:
+            #     np.save(f, current_sun_distance)
         
-            with open(f"output/r_rad_{simulation.version}.npy", "ab") as f:
-                np.save(f, r_rad)
+            # with open(f"output/r_rad_{simulation.version}.npy", "ab") as f:
+            #     np.save(f, r_rad)
         
-            with open(f"output/r_trans_{simulation.version}.npy", "ab") as f:
-                np.save(f, r_trans)
+            # with open(f"output/r_trans_{simulation.version}.npy", "ab") as f:
+            #     np.save(f, r_trans)
         
-            with open(f"output/last_state_{simulation.version}.npy", "ab") as f:
-                np.save(f, last_state)
+            # with open(f"output/last_state_{simulation.version}.npy", "ab") as f:
+            #     np.save(f, last_state)
                 
                 
-            print(timesteps_per_orbit_section[0])
+            # print(timesteps_per_orbit_section[0])
                 
-            if orbit_section == 5:
+            # if orbit_section == 5:
 
-                raise SystemExit
+            #     raise SystemExit
         
             for t in range(timesteps_per_orbit_section[orbit_section]):
     
@@ -583,6 +610,20 @@ class YarkovskySolver(TemperatureSolver):
                 # vertikal_rad = np.rad2deg(np.arcsin(r_rad[:,2]))
                 
                 counter += 1
+                
+
+            # with open(f"output/precomputed_insolation_{simulation.version}.npy", "ab") as f:
+            #     np.save(f, precomputed_insolation)
+        
+            # with open(f"output/true_anomaly_{simulation.version}.npy", "ab") as f:
+            #     np.save(f, true_anomaly)
+        
+            # with open(f"output/current_sun_distance_{simulation.version}.npy", "ab") as f:
+            #     np.save(f, current_sun_distance)
+                
+            # if orbit_section == 5:
+            
+            #     raise SystemExit
 
         print('poluprecnik', poluprecnik)
         print('zapremina', volume)
