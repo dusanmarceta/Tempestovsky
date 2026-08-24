@@ -9,24 +9,24 @@ remote: false                       # Set to true when running on a remote serve
 
 # File paths
 shape_model_file: "500m_ico_sphere_80_facets.stl"  # Name of the shape model file in data/shape_models/
-shape_model_directory: "data/shape_models/"    
+shape_model_directory: "data/shape_models/"
 
 # Physical parameters
 thermal_inertia:        500    # W m⁻² K⁻¹ s⁻½ -
 density:                1000    # kg/m³
 specific_heat_capacity: 1000    # J/kg·K
-emissivity:             0.95         
-albedo:                 0.0              
+emissivity:             0.95
+albedo:                 0.0
 beaming_factor:         1.0
 
 # Model structure parameters
 
-n_skin_depths:          48          # 
-thicknes_0:             0.1          # 
-n_layers:               480          # 
+n_skin_depths:          48          #
+thicknes_0:             0.1          #
+n_layers:               480          #
 convergence_method:     "mean"      # Method to determine convergence: 'mean' or 'max' temperature difference between days
 convergence_target:     0.1         # Target temperature difference between days for convergence in K. Higher values will converge faster.
-max_days:               0          # Maximum number of days to run simulation
+max_days:               5          # Maximum number of days to run simulation
 min_days:               0           # Minimum number of days to run simulation
 
 # Yarkovsky effect related parameters
@@ -55,7 +55,7 @@ fixed_camera_theta: 1.0472                 # Polar angle (radians) of camera dir
 fixed_camera_phi: 0.7854                   # Azimuth angle (radians) of camera direction
 use_precomputed_viewed_temps: true         # Whether to use precomputed viewed-temperature per facet based on viewing geometry (phase effects of thermal emission)
 
-# Plotting settings for individual facet properties 
+# Plotting settings for individual facet properties
 plotted_facet_index: 1220                 # Index of facet to plot detailed temperature evolution
 plot_insolation_curve: false              # Plot insolation for a facet
 plot_initial_temp_histogram: false        # Plot initial temperature distribution of all facets
@@ -89,22 +89,22 @@ plot_energy_terms: false                        # Plot energy balance terms
 
 
 # Orbital parameters
-a_au:                   0.5           # Semi-major axis
+a_au:                   0.8           # Semi-major axis
 ecc:                    0.1           # Eccentricity
-orbital_initialisation: 0.05
+orbital_initialisation: 1
 
 # Rotation Parameters (Pure Fixed-Axis Rotation: P_rot = 2.0h)
 I1:                 1.0           # Moment of inertia x-axis
 I2:                 1.0           # Moment of inertia y-axis
 I3:                 0.21449       # Moment of inertia z-axis
-lambda_L:           0           # Ecliptic longitude of fixed spin axis L [deg]
-beta_L:             80          # Ecliptic latitude of fixed spin axis L [deg]
+lambda_L:           90           # Ecliptic longitude of fixed spin axis L [deg]
+beta_L:             17          # Ecliptic latitude of fixed spin axis L [deg]
 phi_0:              0           # Initial orientation angle [deg]
 psi_0:              0           # Initial spin angle [deg]
 P_phi_h:            9.32444       # Scaled precession parameter (P_rot * I1/I3 = 2.0 * 1.0 / 0.21449)
-P_psi_h:            2.0           # Actual rotation period around fixed z-axis [hours]
+P_psi_h:            4.0           # Actual rotation period around fixed z-axis [hours]
 E_ratio:            1           # EXACTLY 1.0 -> theta_0 = 0 deg (No precession/tumbling)
 epoch_jd:           2456284.676388 # Epoch [Julian Date]
 
 # version
-version:            new           # 
+version:            old          # 
