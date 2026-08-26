@@ -18,6 +18,9 @@ class Simulation:
         """
         Load configuration directly from the Config object.
         """
+        
+        
+        t_scale = 3
         # Assign configuration to attributes, converting lists to numpy arrays as needed
         for key, value in self.config.config_data.items():
             if isinstance(value, list):
@@ -38,7 +41,7 @@ class Simulation:
 
         
         self.thermal_diffusivity = self.thermal_conductivity / (self.density * self.specific_heat_capacity)
-        self.timesteps_per_day = self.calculate_adaptive_timesteps() # Adaptive timestep for low thermal inertia stability
+        self.timesteps_per_day = self.calculate_adaptive_timesteps() * t_scale # Adaptive timestep for low thermal inertia stability
         self.delta_t = self.rotation_period_s / self.timesteps_per_day
  
         
