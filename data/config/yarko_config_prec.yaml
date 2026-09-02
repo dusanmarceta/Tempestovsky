@@ -89,20 +89,20 @@ plot_energy_terms: false                        # Plot energy balance terms
 
 
 # Orbital parameters
-a_au:                   0.5           # Semi-major axis
+a_au:                   1           # Semi-major axis
 ecc:                    0.0           # Eccentricity
-orbital_initialisation: 0.75
+orbital_initialisation: 3
 
 # Rotation Parameters
 # Rotation Parameters (Pure Fixed-Axis Rotation: P_spin = 200h)
-I1:                 5.0           # Moment of inertia x-axis (normalized to I3 = 1.0)
-I2:                 5.0           # Moment of inertia y-axis (normalized to I3 = 1.0)
-lambda_L:           -45            # Ecliptic longitude of fixed spin axis L [deg]
-beta_L:             -10            # Ecliptic latitude of fixed spin axis L [deg]
-phi_0:              36             # Initial orientation angle [deg]
-psi_0:              98             # Initial spin angle [deg]
-P_phi_h:            100        # Scaled precession parameter (P_rot / A = 200.0 * 5.0)
-E_ratio:            1.0           # EXACTLY 1.0 -> theta_0 = 0 deg (No precession/tumbling)
+I1:                 422.723           # Moment of inertia x-axis (normalized to I3 = 1.0)
+I2:                 422.723           # Moment of inertia y-axis (normalized to I3 = 1.0)
+lambda_L:           0            # Ecliptic longitude of fixed spin axis L [deg]
+beta_L:             90            # Ecliptic latitude of fixed spin axis L [deg]
+phi_0:              90             # Initial orientation angle [deg]
+psi_0:              0             # Initial spin angle [deg]
+P_phi_h:            8766.0        # Scaled precession parameter (P_rot / A = 200.0 * 5.0)
+E_ratio:            0.7508           # EXACTLY 1.0 -> theta_0 = 0 deg (No precession/tumbling)
 
 # version
 version:            new          # 

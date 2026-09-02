@@ -3,14 +3,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 from numba import jit
 from .base_solver import TemperatureSolver
-from src.utilities.utils import conditional_print
+from src.utilities.utils import conditional_print, compute_tumbling_dynamics
 from src.model.insolation import calculate_insolation, calculate_insolation_whole_orbit, calculate_insolation_orbit_section
 from src.model.simulation import ThermalData_propagation
 import astropy.constants as const
 import time
 import os
 
-from src.utilities.tumbling_final_2 import compute_tumbling_dynamics
+#from src.utilities.tumbling_final_2 import compute_tumbling_dynamics
 
 # Standalone numba functions
 @jit(nopython=True)
@@ -222,7 +222,7 @@ class YarkovskySolver(TemperatureSolver):
 #        # indeks najblizi polu
 #        idx_pole = np.argmax(np.abs(normals[:,2]))
 
-        poluprecnik = (3 * volume /4 / np.pi)**0.33333333333
+        poluprecnik = (3 * volume /4 / np.pi)**(1/3)
 
         # Initialize constants
         const1 = simulation.delta_t / (simulation.layer_thickness * simulation.density * simulation.specific_heat_capacity)
@@ -433,55 +433,7 @@ class YarkovskySolver(TemperatureSolver):
                     thermal_data.layer_temperatures = update_thermal_state(thermal_data, precomputed_insolation[:, t], simulation)
         
                     surface_temperatures = thermal_data.layer_temperatures[:, 0]
-    #                # Ovde možeš sačuvati površinsku temperaturu za ovaj trenutak ako ti treba za grafikon
-#                    try:
-#                        surface_history[:, counter] = surface_temperatures
-#                    except IndexError as e:
-#                        print("Uhvaćen IndexError na liniji surface_history[:, counter] = surface_temperatures")
-#                        print(f"counter = {counter}")
-#                        print(f"orbit section = {orbit_section}")
-#                        print(f"surface_history.shape = {surface_history.shape}")
-#                        print(f"ukupno bi trebalo da ima = {np.sum(timesteps_per_orbit_section)}")
-#                        print(f"ukupno bi trebalo da ima do ovog = {np.sum(timesteps_per_orbit_section[:orbit_section])}")
-#                        print(f"u prvom ima = {timesteps_per_orbit_section[0]}")
-#                        print(f"u sadasnjem ima = {timesteps_per_orbit_section[orbit_section]}")
-#                        print(f"u poslednjem ima = {timesteps_per_orbit_section[-1]}")
-#                        
-#                        print(f"svi = {timesteps_per_orbit_section}")
-                        
-#                        if 'surface_temperatures' in locals():
-#                            print(f"surface_temperatures.shape = {surface_temperatures.shape}")
-#                            print(f"Prvih 10 vrednosti: {surface_temperatures[:10]}")
-#                        raise  # opet baci grešku da vidiš traceback
-       
-#                    mean_T[counter] = np.mean(surface_history[:, counter])
-#                    mean_insolation[counter] = np.mean(precomputed_insolation[:, t])
-#                    
-#                    true_anomaly_orbit[counter] = true_anomaly[t]
-#                    r_sun[counter] = current_sun_distance[t]
-                    
-#                    counter += 1
 
-        
-#        plt.figure()
-#        plt.plot(np.arange(np.sum(timesteps_per_orbit_section))*simulation.delta_t/3600, mean_insolation)
-#        plt.title('INSOLATION (initialisation)')
-#        plt.grid()
-#        plt.show()
-#        
-#        plt.figure()
-#        plt.plot(np.arange(np.sum(timesteps_per_orbit_section))*simulation.delta_t/3600, mean_T)
-#        plt.title('MEAN T (initialisation)')
-#        plt.grid()
-#        plt.show()
-#        
-#        plt.figure()
-#        plt.plot(np.arange(np.sum(timesteps_per_orbit_section))*simulation.delta_t/3600, true_anomaly_orbit)
-#        plt.title('true anomaly (initialisation)')
-#        plt.grid()
-#        plt.show()
-#        
-        
         
         print('**********************************************')
         print('**********************************************')
@@ -500,11 +452,7 @@ class YarkovskySolver(TemperatureSolver):
         
         true_anomaly_orbit = np.zeros(simulation.timesteps_per_orbit)
         r_sun = np.zeros(simulation.timesteps_per_orbit)
-        
-        
-        
-        
-        
+
         
 #        number_of_orbit_sections = 3
         timesteps_per_orbit_section = (np.ones(number_of_orbit_sections) * simulation.timesteps_per_orbit/number_of_orbit_sections).astype(int)
@@ -516,13 +464,7 @@ class YarkovskySolver(TemperatureSolver):
         
         counter = 0
         os.makedirs("output", exist_ok=True)
-        print('-----------------------  INITIAL STATE -------------------------')
-        print(f'before initialization, initial state: {simulation.y0}')
-        print(f'after initialization, initial state: {initial_rotation_state}')
-        print(f'after initialization, last state: {last_state}')
-        
-        
-        
+
         last_state = simulation.y0
 
 #        thermal_data.layer_temperatures = thermal_data.layer_temperatures[:, 1, :]

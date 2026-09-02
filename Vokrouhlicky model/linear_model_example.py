@@ -22,19 +22,19 @@ GM = constants.GM_sun.value
 
 
 
-rho = 1000 # gustina (kg/m^3)
+rho = 500 # gustina (kg/m^3)
 
-TI = 700
+TI = 2500
 #k = 1e-3 # koeficijent toplotne provodljivosti (W/(m*K))
 epsi = 0.95 # emissivity of the surface element
 cp = 1000. # Toplotni kapacitet pri konstantnom pritisku (J/kg K)
 albedo = 0.
-semi_major_axis = 0.8 # au
+semi_major_axis = 1 # au
 eccentricity = 0.0
 R = 238.97541362458387 # asteroid radius (m)
-#R = 249.2796269674462 # asteroid radius (m)
-rotation_period = 60. # hours
-gamma = 92 # nagib ose rotacije od vertikale
+# R = 249.2796269674462 # asteroid radius (m)
+rotation_period = 32 # hours
+gamma = 30 # nagib ose rotacije od vertikale
 
 mean_motion = np.sqrt(GM / (semi_major_axis * au)**3)
 T = 2*np.pi / mean_motion

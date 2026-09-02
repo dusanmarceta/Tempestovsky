@@ -20,20 +20,80 @@ class Simulation:
         """
         
         
-        t_scale = 3
+        t_scale = 1
         # Assign configuration to attributes, converting lists to numpy arrays as needed
         for key, value in self.config.config_data.items():
             if isinstance(value, list):
                 value = np.array(value)
             setattr(self, key, value)
         
+        
+        
+        self.I3 = 1
+        
+        # 2. IZDVAJANJE PARAMETARA I KONVERZIJA U SI JEDINICE
+        self.I = (self.I1, self.I2, self.I3)
+        
+        
+
+        # Uglovi iz stepeni u radijane
+
+        phi_0 = np.deg2rad(self.phi_0)
+        psi_0 = np.deg2rad(self.psi_0)
+
+        # Periodi, energija i epoha
+
+        A = (np.sin(psi_0) ** 2 / self.I1) + (np.cos(psi_0) ** 2 / self.I2)
+        sin2_theta0 = (self.E_ratio - 1.0) / (self.I3 * A - 1.0)
+        theta_0 = np.arcsin(np.sqrt(sin2_theta0))
+
+        # 4. PRORAČUN UGAONIH BRZINA I VEKTORA POČETNOG STANJA y0
+        w_phi = (2 * np.pi) / (self.P_phi_h * 3600.0)
+
+        # UNIVERZALNO: Deljenje sa A radi i za I1 != I2 i za I1 == I2
+        L_mag = w_phi / A
+
+        w1_0 = (L_mag * np.sin(theta_0) * np.sin(psi_0)) / self.I1
+        w2_0 = (L_mag * np.sin(theta_0) * np.cos(psi_0)) / self.I2
+        w3_0 = (L_mag * np.cos(theta_0)) / self.I3
+
+        self.y0 = [w1_0, w2_0, w3_0, phi_0, theta_0, psi_0]
+        
+        # 5. Proračun P_psi_h (egzaktno za fiksiranu rotaciju theta_0 = 0)
+        # 5. Proračun P_psi_h i perioda rotacije u sekundama
+        if np.isclose(self.E_ratio, 1.0) or theta_0 < 1e-7:
+            self.P_psi_h_calculated = self.P_phi_h * A * self.I3
+            self.mode = "Fixed-Axis Rotation"
+            print(f'Fiksna rotacija sa periodom od {self.P_psi_h_calculated:.4f} h')
+            print(f'izracunati period: {self.P_psi_h_calculated}')
+        else:
+            # U tumbling režimu, efektivni (instantni) period spina iz w3_0
+            # w3_0 = L_mag * cos(theta_0) / I3
+            if abs(w3_0) > 1e-15:
+                self.P_psi_h_calculated = (2 * np.pi / w3_0) / 3600.0
+                
+                
+            else:
+                self.P_psi_h_calculated = np.nan
+                
+            self.mode = "General Tumbling"
+            print(f'Tumbling režim: Početni efektivni period spina P_psi = {self.P_psi_h_calculated:.4f} h')
+            print(f'izracunati period: {self.P_psi_h_calculated}')
+            
+            
         # ADDED
         self.mean_motion = np.sqrt(const.GM_sun.value / (self.a_au * const.au.value)**3)
         self.orbital_period = 2*np.pi / self.mean_motion
         # -----------------------------------------------------------------
         # Initialization calculations based on the loaded parameters
 #        self.solar_distance_m = self.solar_distance_au * 1.496e11  # Convert AU to meters
-        self.rotation_period_s = self.P_psi_h * 3600  # Convert hours to seconds
+        if self.P_psi_h_calculated is not None and not np.isnan(self.P_psi_h_calculated):
+            self.rotation_period_s = self.P_psi_h_calculated * 3600.0
+        else:
+            # Fallback ako je w3_0 = 0
+            self.rotation_period_s = (2 * np.pi / w_phi)
+        
+        
         self.angular_velocity = (2 * np.pi) / self.rotation_period_s
         self.thermal_conductivity = (self.thermal_inertia**2 / (self.density * self.specific_heat_capacity))
         self.skin_depth = (self.thermal_conductivity / (self.density * self.specific_heat_capacity * self.angular_velocity)) ** 0.5
@@ -64,36 +124,6 @@ class Simulation:
     
         self.orbital_period = 2*np.pi / np.sqrt(const.GM_sun.value /(self.a_au * const.au.value)**3)
         self.timesteps_per_year = int(np.ceil(self.orbital_period / self.delta_t))
-        
-        
-        
-        # 2. IZDVAJANJE PARAMETARA I KONVERZIJA U SI JEDINICE
-        self.I = (self.I1, self.I2, self.I3)
-
-        # Uglovi iz stepeni u radijane
-
-        phi_0 = np.deg2rad(self.phi_0)
-        psi_0 = np.deg2rad(self.psi_0)
-
-        # Periodi, energija i epoha
-
-
-           
-        A = (np.sin(psi_0) ** 2 / self.I1) + (np.cos(psi_0) ** 2 / self.I2)
-        sin2_theta0 = (self.E_ratio - 1.0) / (self.I3 * A - 1.0)
-        theta_0 = np.arcsin(np.sqrt(sin2_theta0))
-
-        # 4. PRORAČUN UGAONIH BRZINA I VEKTORA POČETNOG STANJA y0
-        w_phi = (2 * np.pi) / (self.P_phi_h * 3600.0)
-
-        # UNIVERZALNO: Deljenje sa A radi i za I1 != I2 i za I1 == I2
-        L_mag = w_phi / A
-
-        w1_0 = (L_mag * np.sin(theta_0) * np.sin(psi_0)) / self.I1
-        w2_0 = (L_mag * np.sin(theta_0) * np.cos(psi_0)) / self.I2
-        w3_0 = (L_mag * np.cos(theta_0)) / self.I3
-
-        self.y0 = [w1_0, w2_0, w3_0, phi_0, theta_0, psi_0]
         
         
         
